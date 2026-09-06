@@ -22,6 +22,21 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // release 也签名，避免产出 app-release-unsigned.apk 导致安装时报
+            // INSTALL_PARSE_FAILED_NO_CERTIFICATES。个人自用：复用 Android
+            // 自动生成的 debug keystore（先跑过一次 assembleDebug 即会存在）。
+            // 如需正式签名，请自行 keytool 生成 keystore 并替换此配置。
+            signingConfig = signingConfigs.getByName("release")
+        }
+    }
+
+    signingConfigs {
+        create("release") {
+            val home = System.getProperty("user.home")
+            storeFile = file("$home/.android/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
         }
     }
 
