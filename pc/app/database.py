@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import os
+import re
 import sqlite3
 import threading
 from datetime import datetime, timezone
@@ -54,6 +55,26 @@ CREATE INDEX IF NOT EXISTS idx_records_bullet_time
 CREATE INDEX IF NOT EXISTS idx_records_time
     ON price_records (captured_epoch);
 """
+
+# 用于清洗被 OCR 污染的子弹名（以已知口径为锚，去掉名称开头混入的杂质数字）
+_CALIBERS = [
+    "7.62x39毫米", "7.62x54毫米", "5.56x45毫米", "9x19毫米",
+    "7.62x51毫米", "5.7x28毫米", "9x39毫米", "5.45x39毫米", "12.7x99毫米",
+    ".44口径", ".45口径", "7.62x25毫米", ".338口径", "5.8x42毫米",
+]
+
+
+def clean_bullet_name_display(name: str) -> str:
+    """展示层清洗：去掉子弹名前混入的杂质（如 '27.62x39毫米…'→'7.62x39毫米…'）。"""
+    t = re.sub(r"\s+", "", str(name))
+    low = t.lower()
+    for c in _CALIBERS:
+        k = c.lower()
+        i = low.find(k)
+        if i >= 0:
+            return t[i:]
+    return name
+
 
 DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "abm.db"
 
@@ -336,4 +357,6 @@ class Database:
         rel = d.pop("rel_path", None)
         if d.get("snapshot_id") and rel:
             d["snapshot_url"] = f"/static/snapshots/{rel}"
+        # 展示层清洗：去掉被 OCR 混入的杂质前缀
+        d["bullet_name"] = clean_bullet_name_display(d.get("bullet_name", ""))
         return d

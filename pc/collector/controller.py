@@ -21,7 +21,7 @@ from PIL import Image
 
 from collector.config import load_config
 from collector.device import AdbDevice
-from collector.matcher import compact
+from collector.matcher import clean_bullet_name, compact
 from collector.ocr import OcrEngine, OcrLine
 
 logger = logging.getLogger("collector.controller")
@@ -152,7 +152,7 @@ class CollectorController:
         ]
         out: list[tuple[str, int, OcrLine]] = []
         for nl in name_lines:
-            name = nl.text.strip()
+            name = clean_bullet_name(nl.text, [caliber])
             if not name:
                 continue
             y0, y1 = nl.bottom, min(H, nl.bottom + below)

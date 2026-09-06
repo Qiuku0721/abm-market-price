@@ -24,6 +24,25 @@ def compact(text: str) -> str:
     return re.sub(r"\s+", "", normalize(text))
 
 
+def clean_bullet_name(text: str, calibers: list[str] | tuple[str, ...]) -> str:
+    """清洗 OCR 得到的子弹名：以已知口径子串为锚，去掉名称开头混入的杂质数字。
+
+    例：'27.62x39毫米PSO子弹'（口径 '7.62x39毫米'）→ '7.62x39毫米PSO子弹'。
+    """
+    t = re.sub(r"\s+", "", (text or "").strip())
+    if not t:
+        return ""
+    low = t.lower()
+    for cal in calibers:
+        key = compact(cal)
+        if key:
+            idx = low.find(key)
+            if idx >= 0:
+                t = t[idx:]
+                break
+    return t.strip().strip("，,。、·:：*—")
+
+
 def match_lines(lines: list[OcrLine], pending: set[str]) -> list[tuple[str, OcrLine]]:
     """在 OCR 行中找清单名称（子串匹配，容忍断行缺失的除外）。"""
     found: list[tuple[str, OcrLine]] = []
