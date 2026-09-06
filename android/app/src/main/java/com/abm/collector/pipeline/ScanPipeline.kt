@@ -54,8 +54,17 @@ class ScanPipeline(
     private val tag = "ScanPipeline"
     private val random = Random(System.currentTimeMillis())
 
-    suspend fun runRound(screenW: Int, screenH: Int, maxScrolls: Int = 12): RoundSummary {
-        log("round 开始：先回列表顶部")
+    suspend fun runRound(
+        screenW: Int,
+        screenH: Int,
+        maxScrolls: Int = 12,
+        navTaps: List<Pair<Float, Float>> = emptyList()
+    ): RoundSummary {
+        log("round 开始：执行 ${navTaps.size} 个导航点击后回列表顶部")
+        for ((nx, ny) in navTaps) {
+            GestureController.tap((screenW * nx).toFloat(), (screenH * ny).toFloat())
+            delay(actionDelay())
+        }
         scrollToTop(screenW, screenH)
         delay(actionDelay())
 

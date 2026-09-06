@@ -87,13 +87,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadInputs() {
         binding.etPcUrl.setText(config.baseUrl)
-        binding.etInterval.setText(config.intervalMinutes.toString())
+        binding.etInterval.setText(config.intervalSeconds.toString())
         binding.etBullets.setText(store.load().joinToString("\n") { it.name })
+        binding.etNavTaps.setText(config.navTapsText)
     }
 
     private fun saveInputs() {
         config.baseUrl = binding.etPcUrl.text?.toString().orEmpty()
-        config.intervalMinutes = binding.etInterval.text?.toString()?.toIntOrNull() ?: PcConfig.DEFAULT_INTERVAL_MIN
+        config.intervalSeconds = binding.etInterval.text?.toString()?.toIntOrNull()
+            ?: PcConfig.DEFAULT_INTERVAL_SEC
+        config.navTapsText = binding.etNavTaps.text?.toString().orEmpty()
         saveBullets()
     }
 

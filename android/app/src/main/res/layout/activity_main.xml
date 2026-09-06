@@ -43,13 +43,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="采集周期（分钟，1-1440）" />
+            android:text="采集周期（秒，5~86400）" />
 
         <EditText
             android:id="@+id/et_interval"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="5"
+            android:hint="60"
             android:inputType="number" />
 
         <TextView
@@ -73,6 +73,21 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="保存清单" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="导航点击（可选）：每轮先点这些位置再扫描。每行填两个 0~1 数字（宽,高）。例：进入市场后点「子弹」分类在 0.5,0.45 就填 0.5,0.45" />
+
+        <EditText
+            android:id="@+id/et_nav_taps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="top"
+            android:hint="0.5,0.45&#10;0.3,0.6"
+            android:inputType="textMultiLine"
+            android:minLines="3" />
 
         <LinearLayout
             android:layout_width="match_parent"

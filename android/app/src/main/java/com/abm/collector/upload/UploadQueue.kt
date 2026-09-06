@@ -33,7 +33,8 @@ import java.util.concurrent.TimeUnit
 class UploadQueue(
     context: Context,
     private val config: PcConfig,
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    private val log: (String) -> Unit = {}
 ) {
     private val tag = "UploadQueue"
     private val pendingDir = File(context.filesDir, "pending").apply { mkdirs() }
@@ -44,6 +45,10 @@ class UploadQueue(
     private val mutex = Mutex()
     private val jsonType = "application/json; charset=utf-8".toMediaType()
     private var counter = 0L
+
+    /** 当前待上传记录数（pending 目录中未发送的 .json 数）。 */
+    fun pendingCount(): Int =
+        pendingDir.listFiles { f -> f.extension == "json" }?.size ?: 0
 
     /** 入队一条记录（含可选 JPEG 缩略图）。 */
     fun add(record: PriceRecord) {
@@ -79,6 +84,7 @@ class UploadQueue(
                 val outcome = try {
                     send(jsonFile, jpgFile)
                 } catch (e: Exception) {
+                    log("上传失败：${e.message}（将自动重试）")
                     Log.w(tag, "send error", e)
                     Outcome.RETRY
                 }
@@ -86,9 +92,11 @@ class UploadQueue(
                     Outcome.SUCCESS, Outcome.DROP -> {
                         jsonFile.delete()
                         jpgFile.delete()
+                        log("上报成功/丢弃：$id（$outcome）")
                         Log.i(tag, "sent/dropped $id ($outcome)")
                     }
                     Outcome.RETRY -> {
+                        log("上报待重试：$id（目标 ${config.baseUrl}）")
                         Log.w(tag, "retry later: $id")
                         break // 保序：剩余条目下次 flush
                     }

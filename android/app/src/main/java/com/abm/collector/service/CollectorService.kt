@@ -158,7 +158,7 @@ class CollectorService : Service() {
         scanner = scan
 
         val store = BulletStore(this)
-        val queue = UploadQueue(this, config, scope)
+        val queue = UploadQueue(this, config, scope, log = { UiLog.append(it) })
         uploadQueue = queue
         pipeline = ScanPipeline(
             capturer = cap,
@@ -167,7 +167,7 @@ class CollectorService : Service() {
             onRecord = { record, jpeg -> queue.add(record.copy(snapshotJpeg = jpeg)) },
             log = { UiLog.append(it) }
         )
-        UiLog.append("采集服务就绪 ${screenW}x$screenH，无障碍：${GestureController.isReady}")
+        UiLog.append("采集服务就绪 ${screenW}x$screenH；上报地址 ${config.baseUrl}；周期 ${config.intervalSeconds}s；导航点击 ${config.parseNavTaps().size} 个")
     }
 
     private suspend fun runLoop() {
@@ -177,11 +177,11 @@ class CollectorService : Service() {
             uploadQueue?.flush()
             if (!GestureController.isReady) {
                 UiLog.append("警告：无障碍服务未连接，跳过本轮")
-                delay(30_000L)
+                delay(10_000L)
                 continue
             }
             val summary = try {
-                pipe.runRound(screenW, screenH)
+                pipe.runRound(screenW, screenH, navTaps = config.parseNavTaps())
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -194,12 +194,14 @@ class CollectorService : Service() {
                 updateNotification(lastSummary)
             }
             uploadQueue?.flush()
+            val pending = uploadQueue?.pendingCount() ?: 0
+            if (pending > 0) UiLog.append("还有 $pending 条待上报（检查地址/通道）")
 
-            // 防呆：采集间隔 ±25% 抖动，避免固定节律
-            val base = config.intervalMinutes * 60_000L
+            // 采集间隔（秒，可低至 5s）±25% 抖动，避免完全固定节律
+            val base = config.intervalSeconds * 1000L
             val jitter = (base * 0.25 * random.nextDouble()).toLong()
-            val wait = if (random.nextBoolean()) base + jitter else (base - jitter).coerceAtLeast(30_000L)
-            UiLog.append("下一轮在 ${wait / 1000}s 后")
+            val wait = if (random.nextBoolean()) base + jitter else (base - jitter).coerceAtLeast(3_000L)
+            UiLog.append("下一轮在 ${wait / 1000.0}s 后")
             updateNotification("采集中，下一轮 ${wait / 1000}s 后")
             delay(wait)
         }
