@@ -150,6 +150,15 @@ public class MainForm : Form
         bSave.Click += (_, _) => SaveConfigToFile();
         AddRow(bSave);
 
+        var bReset = new Button
+        {
+            Text = "♻ 一键重置（清空全部记录/日志/历史）",
+            Height = 32, Dock = DockStyle.Top,
+            BackColor = Color.IndianRed, ForeColor = Color.White,
+        };
+        bReset.Click += (_, _) => ResetAllData();
+        AddRow(bReset);
+
         AddLabel("采集控制（启动 python run_collector.py）：");
         var pyBtns = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Top };
         var bStart = new Button { Text = "▶ 启动采集", Width = 130 };
@@ -423,6 +432,51 @@ public class MainForm : Form
         StandardOutputEncoding = System.Text.Encoding.UTF8,
         StandardErrorEncoding = System.Text.Encoding.UTF8,
     };
+
+    private void ResetAllData()
+    {
+        if (MessageBox.Show(
+            "确定要一键重置吗？\n将删除所有历史记录、价格表、日志与快照，且不可恢复。",
+            "一键重置", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+            return;
+
+        var baseDir = AppContext.BaseDirectory;
+        var db = Path.Combine(baseDir, "data", "abm.db");
+        var snaps = Path.Combine(baseDir, "data", "snapshots");
+        var abm = Path.Combine(baseDir, "abm.exe");
+
+        string exe; var args = new List<string>();
+        if (File.Exists(abm))
+        {
+            exe = abm; args.Add("reset");
+        }
+        else
+        {
+            var repo = FindRepoRoot();
+            if (repo is null) { Log("无法定位程序/仓库目录，无法重置"); return; }
+            exe = Path.Combine(repo, "pc", ".venv", "Scripts", "python.exe");
+            args.Add(Path.Combine(repo, "pc", "entry.py"));
+            args.Add("reset");
+            db = Path.Combine(repo, "pc", "data", "abm.db");
+            snaps = Path.Combine(repo, "pc", "static", "snapshots");
+        }
+
+        if (File.Exists(db)) { args.Add("--db"); args.Add(db); }
+        if (Directory.Exists(snaps)) { args.Add("--snapshots"); args.Add(snaps); }
+        var logF = Path.Combine(baseDir, "collector.log");
+        if (File.Exists(logF)) { args.Add("--logs"); args.Add(logF); }
+        if (args.Count <= 1) { Log("当前没有可清理的数据"); return; }
+
+        try
+        {
+            var psi = new ProcessStartInfo { FileName = exe, UseShellExecute = false, CreateNoWindow = true };
+            foreach (var a in args) psi.ArgumentList.Add(a);
+            using var p = Process.Start(psi);
+            p?.WaitForExit(120000);
+            Log("已一键重置：清空了历史记录、价格表、日志与快照");
+        }
+        catch (Exception ex) { Log("重置失败：" + ex.Message); }
+    }
 
     private void StopCollector()
     {
