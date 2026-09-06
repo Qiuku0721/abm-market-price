@@ -11,7 +11,7 @@
 MediaProjection 截屏 ──┐                 FastAPI :8600
 ML Kit OCR 识别名称/价格 ── 采集循环         ├─ SQLite（记录/清单/设备/快照）
 无障碍 dispatchGesture 点击/滚动            ├─ 本地 Web 页（最新价/走势/明细/快照抽查）
-HTTP + 文件队列 断网重传 ──── 局域网 ────►  └─ CSV / Excel 导出
+HTTP + 文件队列 断网重传 ── USB/Wi-Fi ────►  └─ CSV / Excel 导出
 ```
 
 - 🎓 新手使用教程：`docs/TUTORIAL.md`
@@ -39,7 +39,8 @@ HTTP + 文件队列 断网重传 ──── 局域网 ────►  └─ 
 cd pc
 scripts\start.bat        # Windows：自动建 venv、装依赖、启动 http://0.0.0.0:8600
 # 浏览器打开 http://127.0.0.1:8600
-# 记住本机局域网 IP（App 里要填），如 192.168.1.100
+# USB 有线模式（推荐）：插数据线 -> 双击 pc\scripts\usb-link.bat，App 填 http://127.0.0.1:8600
+# Wi-Fi 模式：App 填电脑局域网 IP（cmd 里 ipconfig 查看）
 ```
 
 手动方式：`python -m venv .venv && .venv\Scripts\activate && pip install -r requirements.txt && python server.py`。
@@ -48,7 +49,7 @@ scripts\start.bat        # Windows：自动建 venv、装依赖、启动 http://
 
 1. 用 Android Studio 打开 `android/`，构建并安装（或 `cd android && gradlew.bat assembleDebug`，产物 `app/build/outputs/apk/debug/app-debug.apk`）。
 2. 系统设置 → 无障碍 → 开启 **ABM Collector 手势服务**。
-3. 打开 App：填写电脑端 IP → 编辑子弹清单（每行一个名称）→「保存清单」→「开始采集」，按提示授予**屏幕录制**权限。
+3. USB 有线模式（推荐）：手机开 USB 调试并插数据线 → 双击 `pc\scripts\usb-link.bat` 建好通道 → 打开 App，地址保持默认 `http://127.0.0.1:8600`；Wi-Fi 模式则填电脑局域网 IP。然后编辑子弹清单（每行一个名称）→「保存清单」→「开始采集」，按提示授予**屏幕录制**权限。
 4. 将《暗区突围》切到**市场列表页**并保持前台，App 会按周期自动滚动扫描并上报。
 
 ## 目录结构

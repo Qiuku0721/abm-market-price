@@ -5,7 +5,7 @@
 
 ## 1. 通用约定
 
-- 传输：HTTP/1.1 over TCP（局域网），默认 `http://<PC_IP>:8600`。
+- 传输：HTTP/1.1 over TCP；推荐链路为 **USB 有线（`adb reverse tcp:8600 tcp:8600`，App 填 `http://127.0.0.1:8600`）**，也可走局域网 Wi-Fi（App 填 `http://<PC_IP>:8600`）。
 - 内容：`Content-Type: application/json`，UTF-8；快照上传为 `multipart/form-data`。
 - 时间戳：ISO 8601 带时区偏移字符串，如 `2025-09-06T12:34:56+08:00`。
 - 价格单位：**单发价格**（整数，科恩币 `Koen`，无小数）。

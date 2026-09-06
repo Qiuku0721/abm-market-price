@@ -33,7 +33,8 @@ class PcConfig(context: Context) {
         }
 
     companion object {
-        const val DEFAULT_BASE_URL = "http://192.168.1.100:8600"
+        /** USB 有线传输（adb reverse）时固定填 127.0.0.1:8600；Wi-Fi 局域网模式改为电脑 IP。 */
+        const val DEFAULT_BASE_URL = "http://127.0.0.1:8600"
         const val DEFAULT_INTERVAL_MIN = 5
         private const val PREFS = "abm_collector_config"
         private const val KEY_BASE_URL = "base_url"

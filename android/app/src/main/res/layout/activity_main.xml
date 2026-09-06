@@ -29,13 +29,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="电脑端地址（含端口）" />
+            android:text="电脑端地址（USB 传输固定填 http://127.0.0.1:8600；Wi-Fi 模式填电脑局域网 IP）" />
 
         <EditText
             android:id="@+id/et_pc_url"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="http://192.168.1.100:8600"
+            android:hint="http://127.0.0.1:8600"
             android:inputType="textUri"
             android:singleLine="true" />
 
