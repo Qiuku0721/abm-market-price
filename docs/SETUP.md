@@ -1,5 +1,9 @@
 # 环境安装与验证（SETUP）
 
+> ⚠️ 注：安卓 App 方案（§B Android 构建/真机、§C 真机回归）**已弃用移除**；
+> 当前电脑端方案只需保留 **USB 调试** 相关知识（§B.4 前几条），其余 A 节（Python 3.12）与
+> `pc/scripts/start.bat`、`run_collector.py`、`pytest` 仍适用。
+
 > 当前开发机（Windows）**尚未安装 Python 与 Android SDK**。以下步骤在有网络与安装权限的机器上执行；
 > 每条验证命令均给出「预期输出」，作为 M2/M3 阶段运行级验证的依据。
 

@@ -1,5 +1,8 @@
 # 端到端验证手册
 
+> ⚠️ 注：§4「手机端真机回归」为**已弃用**的安卓 App 方案内容；
+> 当前电脑端采集的验证以 `pc/collector/debug/` 截图 + `config.json` 调参为准（见 `docs/PC_COLLECTOR.md`）。
+
 > 环境安装与依赖验证见 `SETUP.md`；本手册覆盖**联调运行级验证**。
 > 当前开发机无 Python / Android SDK，以下命令需在就绪环境执行（预期输出已列出）。
 

@@ -13,14 +13,7 @@ pc/collector/*.jpg
 pc/collector/*.log
 auto-build.log
 
-# Android / Gradle
-android/.gradle/
-android/build/
-android/app/build/
-android/local.properties
-android/.idea/
-android/captures/
-android/.kotlin/
+# Android / Gradle（安卓 App 方案已弃用移除）
 *.apk
 *.aab
 
@@ -39,3 +32,4 @@ pc/dist/
 pc/build/
 *.spec
 release/
+android/
