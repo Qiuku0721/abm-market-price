@@ -52,6 +52,16 @@ if errorlevel 1 (
 )
 
 :run
+rem 检测 8600 是否已被占用（可能之前已启动），避免重复启动时报错退出
+netstat -ano | findstr ":8600" | findstr "LISTENING" >nul 2>nul
+if not errorlevel 1 (
+    echo [提示] 检测到电脑端服务已在运行（端口 8600）。
+    echo 直接浏览器打开 http://127.0.0.1:8600 即可看到统计页面。
+    echo 如需重启以加载最新代码：任务管理器结束 python 进程后重新双击本脚本。
+    pause
+    exit /b 0
+)
+
 echo [3/3] 启动服务：http://0.0.0.0:8600
 echo 浏览器打开 http://127.0.0.1:8600 查看统计页面
 echo 按 Ctrl+C 可停止服务

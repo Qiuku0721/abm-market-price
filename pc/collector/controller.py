@@ -159,6 +159,17 @@ class CollectorController:
         nums = [n for n in nums if n > 0]
         return max(nums) if nums else None
 
+    def _grid_scroll_back_to_top(self, W: int, H: int) -> None:
+        """右侧网格向上滚回顶部：手指下滑（内容向下滚回），避免上一口径残留位置。"""
+        gp = self.cfg.get("grid_panel", {})
+        x = int(W * gp.get("x", 0.62))
+        from_y = int(H * gp.get("from_y", 0.72))
+        to_y = int(H * gp.get("to_y", 0.30))
+        dur = int(gp.get("duration_ms", 400))
+        for _ in range(int(self.cfg.get("grid_back_to_top_swipes", 4))):
+            self.device.swipe(x, to_y, x, from_y, dur)
+            self._sleep()
+
     # ---------- 单轮（口径遍历） ----------
     def run_round(self) -> dict:
         cfg = self.cfg
@@ -177,7 +188,17 @@ class CollectorController:
             if not self._tap_left_caliber(caliber, W, H):
                 missed.append(caliber)
                 continue
-            # 点口径后，右侧网格先下滑一次，让最下一行价格显示出来
+            # 先回顶部，确保从该口径网格顶部开始（上一口径残留位置会导致顶部第一行漏采）
+            self._grid_scroll_back_to_top(W, H)
+
+            img = self._grab()
+            self._debug_save(img, f"grid_{caliber}.jpg")
+            H, W = img.shape[:2]
+            lines = self.ocr.scan(img)
+            recs = list(self._extract_grid_records(img, lines, caliber, W, H))
+            seen = {name for name, _, _ in recs}
+
+            # 再下滑一次，让最下一行价格露出，补采并去重，避免种类不全
             if cfg.get("grid_scroll_after_caliber", True):
                 gp = cfg.get("grid_panel", {})
                 x = int(W * gp.get("x", 0.62))
@@ -185,12 +206,14 @@ class CollectorController:
                 to_y = int(H * gp.get("to_y", 0.30))
                 self.device.swipe(x, from_y, x, to_y, int(gp.get("duration_ms", 400)))
                 self._sleep()
+                img2 = self._grab()
+                H, W = img2.shape[:2]
+                lines2 = self.ocr.scan(img2)
+                for name, price, nl in self._extract_grid_records(img2, lines2, caliber, W, H):
+                    if name not in seen:
+                        seen.add(name)
+                        recs.append((name, price, nl))
 
-            img = self._grab()
-            self._debug_save(img, f"grid_{caliber}.jpg")
-            H, W = img.shape[:2]
-            lines = self.ocr.scan(img)
-            recs = self._extract_grid_records(img, lines, caliber, W, H)
             for name, price, nl in recs:
                 self._store_record(name, price, img, nl)
                 processed += 1
