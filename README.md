@@ -14,6 +14,7 @@ ML Kit OCR 识别名称/价格 ── 采集循环         ├─ SQLite（记�
 HTTP + 文件队列 断网重传 ──── 局域网 ────►  └─ CSV / Excel 导出
 ```
 
+- 🎓 新手使用教程：`docs/TUTORIAL.md`
 - 详细设计：`docs/PLAN.md` ｜ 两端协议：`docs/PROTOCOL.md` ｜ 环境安装与验证：`docs/SETUP.md`
 
 ## 快速开始
