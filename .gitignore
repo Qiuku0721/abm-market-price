@@ -1,0 +1,28 @@
+# 通用 / Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.db
+*.sqlite3
+pc/data/
+pc/static/snapshots/
+pc/.pytest_cache/
+
+# Android / Gradle
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/captures/
+android/.kotlin/
+*.apk
+*.aab
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+.vscode/
