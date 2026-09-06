@@ -1,0 +1,21 @@
+{
+  "bullets": [
+    "M80 5.56x45"
+  ],
+  "interval_sec": 60,
+  "nav_taps": [],
+  "scroll": {
+    "from_y": 0.72,
+    "to_y": 0.3,
+    "x": 0.5,
+    "duration_ms": 400
+  },
+  "top_swipes": 6,
+  "price_zone_left_x": 0.52,
+  "row_pad_px": 22,
+  "max_scrolls": 12,
+  "stagnant_limit": 2,
+  "action_delay_ms": 500,
+  "debug_save": 1,
+  "save_snapshots": true
+}

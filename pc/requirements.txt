@@ -3,6 +3,9 @@ uvicorn[standard]>=0.29
 pydantic>=2.6
 python-multipart>=0.0.9
 openpyxl>=3.1
+# --- PC 端采集控制器（adb 截屏 + RapidOCR）---
+rapidocr-onnxruntime>=1.4.0
+pillow>=10.0
 
 # --- 测试（可选）---
 pytest>=8.0

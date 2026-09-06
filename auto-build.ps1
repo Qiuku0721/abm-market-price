@@ -35,8 +35,10 @@ function Get-PythonExe {
   if (Test-Path $venvPy) { return $venvPy }
   $launcher = Get-Command 'py.exe' -ErrorAction SilentlyContinue
   if ($launcher) {
-    $out = & py -3 -c 'import sys; print(sys.executable)' 2>$null
-    if ($LASTEXITCODE -eq 0 -and $out) { return ($out | Select-Object -Last 1).Trim() }
+    foreach ($v in @('-3.12', '-3')) {
+      $out = & py $v -c 'import sys; print(sys.executable)' 2>$null
+      if ($LASTEXITCODE -eq 0 -and $out) { return ($out | Select-Object -Last 1).Trim() }
+    }
   }
   $hit = Get-Item (Join-Path $env:LOCALAPPDATA 'Programs\Python\Python3*\python.exe') -ErrorAction SilentlyContinue |
     Select-Object -First 1

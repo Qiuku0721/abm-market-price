@@ -10,9 +10,12 @@ echo ============================================
 rem 1) 已有虚拟环境则直接用其中的 python
 if exist ".venv\Scripts\python.exe" goto :run
 
-rem 2) 找系统 Python：优先 py launcher，其次 python
+rem 2) 找系统 Python：优先 3.12（RapidOCR 需要 <3.13），其次 py 3.x，再 python
 set "PY="
-where py >nul 2>nul && set "PY=py -3"
+where py >nul 2>nul && set "PY=py -3.12"
+if not defined PY (
+    where py >nul 2>nul && set "PY=py -3"
+)
 if not defined PY (
     where python >nul 2>nul && set "PY=python"
 )

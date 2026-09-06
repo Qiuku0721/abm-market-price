@@ -5,7 +5,7 @@
 
 ## A. Python（电脑端程序，要求 3.10+）
 
-1. 安装 Python 3.12：
+1. 安装 Python **3.12**（推荐；采集控制器依赖的 RapidOCR 需 Python <3.13，3.14 不可用）：
    - 管理员 PowerShell：`winget install Python.Python.3.12`；
    - 或从 https://www.python.org/downloads/ 下载安装，**务必勾选 “Add python.exe to PATH”**。
    - 注意：若此前 `python` 命令触发 Microsoft Store 占位页，安装后需**关闭并重开终端**。

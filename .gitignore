@@ -8,6 +8,9 @@ venv/
 pc/data/
 pc/static/snapshots/
 pc/.pytest_cache/
+pc/*.log
+pc/collector/*.jpg
+pc/collector/*.log
 auto-build.log
 
 # Android / Gradle
