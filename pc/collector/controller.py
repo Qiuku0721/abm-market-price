@@ -29,7 +29,7 @@ logger = logging.getLogger("collector.controller")
 SNAP_ROOT = Path(__file__).resolve().parent.parent / "static" / "snapshots"
 DEBUG_DIR = Path(__file__).resolve().parent / "debug"
 PRICE_MAX = 10_000_000
-GRID_X0_RATIO = 0.36  # 右侧网格左边界（屏幕宽度比例），其右侧算网格区
+GRID_X0_RATIO = 0.18  # 右侧网格左边界（屏幕宽度比例）。第一列卡片名起始约 0.19W，需 <该值，否则左列整列漏采
 
 
 class CollectorController:
@@ -113,7 +113,7 @@ class CollectorController:
             self._debug_save(img, "left_scan.jpg")
             h, w = img.shape[:2]
             lines = self.ocr.scan(img[:, : int(w * 0.38)])
-            hit = [l for l in lines if key in compact(l.text) and l.height > 8]
+            hit = [l for l in lines if key in compact(l.text) and l.height > 8 and l.right < int(w * 0.27)]
             if not hit:
                 return False
             target = max(hit, key=lambda l: l.bottom)
