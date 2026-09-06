@@ -324,17 +324,28 @@ public class MainForm : Form
     // ---------------- 配置读写 ----------------
     private void LoadConfigIntoUi()
     {
-        _configPath = ConfigService.FindDefaultPath() ?? "";
-        if (string.IsNullOrEmpty(_configPath))
+        // 发行版：优先用程序同目录的 config.json；开发模式再找仓库 pc/collector/config.json
+        var local = Path.Combine(AppContext.BaseDirectory, "config.json");
+        if (File.Exists(local))
         {
-            _configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                "ABM", "pc", "collector", "config.json");
-            Log("未找到仓库 config.json，将使用：" + _configPath);
+            _configPath = local;
+            try { _cfg = ConfigService.Load(_configPath); }
+            catch (Exception ex) { Log("读取配置失败（将用默认）：" + ex.Message); }
         }
         else
         {
-            try { _cfg = ConfigService.Load(_configPath); }
-            catch (Exception ex) { Log("读取配置失败（将用默认）：" + ex.Message); }
+            _configPath = ConfigService.FindDefaultPath() ?? "";
+            if (string.IsNullOrEmpty(_configPath))
+            {
+                _configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    "ABM", "pc", "collector", "config.json");
+                Log("未找到仓库 config.json，将使用：" + _configPath);
+            }
+            else
+            {
+                try { _cfg = ConfigService.Load(_configPath); }
+                catch (Exception ex) { Log("读取配置失败（将用默认）：" + ex.Message); }
+            }
         }
         _txtConfigPath.Text = _configPath;
         _numInterval.Value = Math.Clamp(_cfg.IntervalSec, 5, 86400);
@@ -363,39 +374,55 @@ public class MainForm : Form
     {
         if (_python is { HasExited: false }) { Log("采集已在运行"); return; }
         SaveConfigToFile();
-        var repo = FindRepoRoot();
-        if (repo is null) { Log("无法定位仓库根目录，请确认程序放置在 ABM Project 内"); return; }
-        var py = Path.Combine(repo, "pc", ".venv", "Scripts", "python.exe");
-        var script = Path.Combine(repo, "pc", "run_collector.py");
-        if (!File.Exists(py))
+        var abmExe = Path.Combine(AppContext.BaseDirectory, "abm.exe");
+        ProcessStartInfo psi;
+        if (File.Exists(abmExe))
         {
-            Log("未找到 pc\\.venv\\Scripts\\python.exe：请先运行 pc\\scripts\\start.bat 完成环境安装");
-            return;
+            // 发行版：调用同目录 abm.exe collect，并把数据目录指向发行目录 data/
+            var dir = AppContext.BaseDirectory;
+            psi = NewPyPsi(abmExe);
+            psi.ArgumentList.Add("collect");
+            psi.ArgumentList.Add("--config");
+            psi.ArgumentList.Add(_configPath);
+            psi.EnvironmentVariables["ABM_DB"] = Path.Combine(dir, "data", "abm.db");
+            psi.EnvironmentVariables["ABM_SNAPSHOTS_DIR"] = Path.Combine(dir, "data", "snapshots");
+            psi.EnvironmentVariables["ABM_STATIC_DIR"] = Path.Combine(dir, "data");
+            psi.EnvironmentVariables["ABM_WEB_STATIC"] = Path.Combine(dir, "web", "static");
         }
-        if (!File.Exists(script)) { Log("未找到 run_collector.py：" + script); return; }
-
-        var psi = new ProcessStartInfo
+        else
         {
-            FileName = py,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            StandardOutputEncoding = System.Text.Encoding.UTF8,
-            StandardErrorEncoding = System.Text.Encoding.UTF8,
-        };
-        psi.ArgumentList.Add(script);
-        psi.ArgumentList.Add("--config");
-        psi.ArgumentList.Add(_configPath);
+            var repo = FindRepoRoot();
+            if (repo is null) { Log("无法定位仓库根目录，请确认程序放置在 ABM Project 内"); return; }
+            var py = Path.Combine(repo, "pc", ".venv", "Scripts", "python.exe");
+            var script = Path.Combine(repo, "pc", "run_collector.py");
+            if (!File.Exists(py)) { Log("未找到 pc\\.venv\\Scripts\\python.exe：请先运行 pc\\scripts\\start.bat 完成环境安装"); return; }
+            if (!File.Exists(script)) { Log("未找到 run_collector.py：" + script); return; }
+            psi = NewPyPsi(py);
+            psi.ArgumentList.Add(script);
+            psi.ArgumentList.Add("--config");
+            psi.ArgumentList.Add(_configPath);
+        }
+
         _python = Process.Start(psi);
         if (_python is null) { Log("启动失败"); return; }
         _python.OutputDataReceived += (_, e) => { if (!string.IsNullOrEmpty(e.Data)) Log("[采集] " + e.Data); };
         _python.ErrorDataReceived += (_, e) => { if (!string.IsNullOrEmpty(e.Data)) Log("[采集!] " + e.Data); };
         _python.BeginOutputReadLine();
         _python.BeginErrorReadLine();
-        _lblPy.Text = "状态：采集中（python 子进程运行中）";
+        _lblPy.Text = "状态：采集中（采集进程运行中）";
         Log("已启动采集（数据可到 http://127.0.0.1:8600 查看）");
     }
+
+    private static ProcessStartInfo NewPyPsi(string fileName) => new()
+    {
+        FileName = fileName,
+        RedirectStandardOutput = true,
+        RedirectStandardError = true,
+        UseShellExecute = false,
+        CreateNoWindow = true,
+        StandardOutputEncoding = System.Text.Encoding.UTF8,
+        StandardErrorEncoding = System.Text.Encoding.UTF8,
+    };
 
     private void StopCollector()
     {

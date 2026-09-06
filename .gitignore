@@ -38,3 +38,4 @@ desktop/dist/
 pc/dist/
 pc/build/
 *.spec
+release/
