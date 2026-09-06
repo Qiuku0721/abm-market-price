@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABM 市场价格记录</title>
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<header>
+  <h1>ABM 市场价格记录</h1>
+  <div class="overview">
+    <span>记录 <b id="stat-records">-</b></span>
+    <span>子弹 <b id="stat-bullets">-</b></span>
+    <span>设备 <b id="stat-devices">-</b></span>
+    <span class="export">
+      <a href="/export/csv" download>导出 CSV</a>
+      <a href="/export/excel" download>导出 Excel</a>
+    </span>
+  </div>
+</header>
+
+<main>
+  <section>
+    <h2>最新价格 <button id="btn-refresh" class="mini">刷新</button></h2>
+    <table id="latest-table">
+      <thead><tr><th>子弹</th><th>最新价</th><th>涨跌</th><th>采集时间</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>价格走势</h2>
+    <div class="row">
+      <select id="trend-bullet"></select>
+      <span id="trend-windows" class="windows">
+        <button data-w="1h">1h</button><button data-w="1d">1d</button>
+        <button data-w="7d">7d</button><button data-w="30d">30d</button>
+      </span>
+    </div>
+    <canvas id="trend-canvas" width="900" height="300"></canvas>
+    <div id="trend-empty" class="empty">暂无数据，请等待采集上报</div>
+  </section>
+
+  <section>
+    <h2>历史明细（<span id="rec-total">0</span> 条，最多显示 200 条）</h2>
+    <table id="records-table">
+      <thead><tr><th>时间</th><th>子弹</th><th>价格</th><th>设备</th><th>快照</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>子弹清单</h2>
+    <div class="row">
+      <input id="bullet-new" placeholder="输入子弹名称，如 M80 5.56x45">
+      <button id="btn-add-bullet" class="mini">添加</button>
+    </div>
+    <table id="bullets-table">
+      <thead><tr><th>名称</th><th>启用</th><th>操作</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</main>
+
+<script src="/assets/app.js"></script>
+</body>
+</html>
