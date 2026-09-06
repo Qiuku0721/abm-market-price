@@ -62,7 +62,7 @@ class ScanPipeline(
         val pending = bullets.activeNames().toMutableSet()
         val hit = mutableListOf<String>()
         var parseFailures = 0
-        var prevHash = 0L
+        var prevHash = 0
         var stagnant = 0
         var aborted = false
         var pages = 0
