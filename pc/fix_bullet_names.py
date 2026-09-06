@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
 from collector.config import load_config  # noqa: E402
-from collector.matcher import clean_bullet_name  # noqa: E402
+from app.bullet_names import normalize_bullet_name  # noqa: E402
 
 
 def candidate_dbs() -> list[Path]:
@@ -39,7 +39,7 @@ def main() -> int:
             for rid, name in rows:
                 if not name:
                     continue
-                clean = clean_bullet_name(str(name), calibers)
+                clean = normalize_bullet_name(str(name))
                 if clean and clean != name:
                     conn.execute(
                         f"UPDATE {table} SET {col}=? WHERE rowid=?", (clean, rid)

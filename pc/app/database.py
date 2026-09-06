@@ -56,24 +56,13 @@ CREATE INDEX IF NOT EXISTS idx_records_time
     ON price_records (captured_epoch);
 """
 
-# 用于清洗被 OCR 污染的子弹名（以已知口径为锚，去掉名称开头混入的杂质数字）
-_CALIBERS = [
-    "7.62x39毫米", "7.62x54毫米", "5.56x45毫米", "9x19毫米",
-    "7.62x51毫米", "5.7x28毫米", "9x39毫米", "5.45x39毫米", "12.7x99毫米",
-    ".44口径", ".45口径", "7.62x25毫米", ".338口径", "5.8x42毫米",
-]
+# 用于清洗被 OCR 污染的子弹名（以已知口径为锚 + 匹配标准名清单）
+from .bullet_names import normalize_bullet_name
 
 
 def clean_bullet_name_display(name: str) -> str:
-    """展示层清洗：去掉子弹名前混入的杂质（如 '27.62x39毫米…'→'7.62x39毫米…'）。"""
-    t = re.sub(r"\s+", "", str(name))
-    low = t.lower()
-    for c in _CALIBERS:
-        k = c.lower()
-        i = low.find(k)
-        if i >= 0:
-            return t[i:]
-    return name
+    """展示层清洗：去掉杂质前缀并归一为标准子弹名。"""
+    return normalize_bullet_name(name)
 
 
 DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "abm.db"
