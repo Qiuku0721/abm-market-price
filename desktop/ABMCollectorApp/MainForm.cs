@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace AbmCollectorApp;
 
@@ -381,6 +381,8 @@ public class MainForm : Form
             RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true,
+            StandardOutputEncoding = System.Text.Encoding.UTF8,
+            StandardErrorEncoding = System.Text.Encoding.UTF8,
         };
         psi.ArgumentList.Add(script);
         psi.ArgumentList.Add("--config");

@@ -8,34 +8,31 @@ from pathlib import Path
 CONFIG_PATH = Path(__file__).resolve().parent / "config.json"
 
 DEFAULT_CONFIG: dict = {
-    # 要采集价格的子弹清单（精确名称）
-    "bullets": [
-        "M80 5.56x45",
+    # 左栏口径顺序（从上到下；click 每个口径后记录右侧该口径全部子弹）
+    # 依你的截图：7.62x39 为第一个，最下面 5.8x42 为最后一个
+    "calibers": [
+        "7.62x39毫米", "7.62x54毫米", "5.56x45毫米", "9x19毫米", "12x70毫米",
+        "5.7x28毫米", "9x39毫米", "5.45x39毫米", "12.7x99毫米", "5.8x42毫米",
+    ],
+    # 每轮先执行的导航点击（归一化 0~1）：例如先点顶部「购买」页签
+    "nav_taps": [
+        # [0.5, 0.05]
     ],
     # 采集周期（秒）
     "interval_sec": 60,
-    # 每轮扫描前先执行的导航点击（归一化 0~1 坐标），用于进入市场/子弹分类页
-    "nav_taps": [
-        # 例：[0.5, 0.92], [0.5, 0.45]
-    ],
-    # 滚动参数（归一化，竖屏为列表向下滚；如游戏横屏请自行调整方向/区域）
-    "scroll": {
-        "from_y": 0.72,
-        "to_y": 0.30,
-        "x": 0.5,
-        "duration_ms": 400,
-    },
-    # 每轮开始回到列表顶部的上滑次数（手指从下往上滑=内容向下=回到顶部；横屏同理）
-    "top_swipes": 6,
-    # 一行中「价格区」左边界（该行右侧再往右到屏幕边缘之间的区域用于识别价格）
-    "price_zone_left_x": 0.52,
-    "row_pad_px": 22,
-    "max_scrolls": 12,
-    # 连续几屏内容无变化判定已到列表底部
-    "stagnant_limit": 2,
-    # 动作之间最小等待毫秒（防点太快）
+    # 左栏口径列表的滑动参数（在左栏上下滑动以找到目标口径）
+    "left_panel": {"x": 0.12, "from_y": 0.72, "to_y": 0.30, "duration_ms": 250},
+    # 右侧子弹网格的滑动参数（切口径后先下滑一次，让第 3 行价格显示出来）
+    "grid_panel": {"x": 0.62, "from_y": 0.72, "to_y": 0.30, "duration_ms": 400},
+    # 点击每个口径后，是否先在右侧网格执行一次下滑
+    "grid_scroll_after_caliber": True,
+    # 价格位于名称行下方 N 像素内的横带（卡片底部价格）
+    "price_below_row_px": 120,
+    # 在每个口径下最多滚动左栏几次找不到就跳过
+    "max_left_scrolls": 8,
+    # 动作之间最小等待毫秒
     "action_delay_ms": 500,
-    # 调试：保存每屏截图到 pc/collector/debug/（0 关闭，1 每屏，2 仅命中行）
+    # 调试：保存每屏截图到 pc/collector/debug/（0 关，1 每屏）
     "debug_save": 1,
     # 快照保存（命中行截图，网页「明细-查看」可见）
     "save_snapshots": True,
@@ -43,6 +40,7 @@ DEFAULT_CONFIG: dict = {
 
 
 def load_config(path: Path | None = None) -> dict:
+    import copy
     cfg_path = path or CONFIG_PATH
     if not cfg_path.exists():
         cfg_path.parent.mkdir(parents=True, exist_ok=True)
@@ -52,4 +50,8 @@ def load_config(path: Path | None = None) -> dict:
         )
         print(f"[config] 已生成默认配置：{cfg_path}（请按需编辑）")
         return json.loads(json.dumps(DEFAULT_CONFIG))
-    return json.loads(cfg_path.read_text(encoding="utf-8"))
+    data = json.loads(cfg_path.read_text(encoding="utf-8"))
+    # 补齐新增/缺失键（如旧版 config 升级后缺 calibers/面板参数等）
+    for key, value in DEFAULT_CONFIG.items():
+        data.setdefault(key, copy.deepcopy(value))
+    return data

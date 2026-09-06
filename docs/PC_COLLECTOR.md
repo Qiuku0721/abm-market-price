@@ -53,6 +53,8 @@
    把 `price_zone_left_x` 调大并向 `1.0`（覆盖整行）、配合 `row_pad_px` 增大以包含卡片底部价格行。
    （后续版本会让桌面端支持**框选价格区域**直接写进 config，更直观。）
 3. 名称匹配：卡片左上角名称如「7.62x51毫米M80子弹」，清单里就填该完整名称（如 `7.62x51毫米M80子弹`），采集器按子串匹配。
+4. **采集器现在按 `calibers` 逐个口径执行**：在左栏 `left_panel` 区域滚动找到该口径 → 点击 → 在右侧 `grid_panel` 下滑一次（露出第三行价格，`grid_scroll_after_caliber` 控制）→ OCR 该口径全部卡片（名称行下方 `price_below_row_px` 像素带内取价格）。
+   `left_panel.x` / `grid_panel.x`（约 0.12 / 0.62）与 `price_below_row_px` 是滑动与取价关键，若命中/价格不对优先调这三项，配合 `debug_save` 看 `pc/collector/debug/` 截图。
 
 ## 界面调参（首次必看）
 
