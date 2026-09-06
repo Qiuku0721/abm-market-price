@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ABM 价格记录器</string>
+    <string name="accessibility_service_label">ABM Collector 手势服务</string>
+    <string name="accessibility_service_description">用于在《暗区突围》市场界面执行坐标点击与滑动（限频、仅在本工具采集流程中使用）。请仅在了解账号风险后开启。</string>
+</resources>
