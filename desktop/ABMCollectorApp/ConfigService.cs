@@ -9,9 +9,9 @@ public class CollectorConfig
     [JsonPropertyName("calibers")] public List<string> Calibers { get; set; } = new()
     {
         "7.62x39毫米", "7.62x54毫米", "5.56x45毫米", "9x19毫米", "12x70毫米",
-        "5.7x28毫米", "9x39毫米", "5.45x39毫米", "12.7x99毫米", "5.8x42毫米",
+        "7.62x51毫米", "5.7x28毫米", "9x39毫米", "5.45x39毫米", "12.7x99毫米",
+        ".44口径", ".45口径", "7.62x25毫米", ".338口径", "5.8x42毫米",
     };
-    [JsonPropertyName("bullets")] public List<string> Bullets { get; set; } = new() { "M80 5.56x45" };
     [JsonPropertyName("interval_sec")] public int IntervalSec { get; set; } = 60;
     [JsonPropertyName("nav_taps")] public List<double[]> NavTaps { get; set; } = new();
     [JsonPropertyName("left_panel")] public PanelCfg LeftPanel { get; set; } = new(0.12, 0.60, 0.46, 300);

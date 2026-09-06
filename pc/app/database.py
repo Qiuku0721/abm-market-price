@@ -281,6 +281,22 @@ class Database:
             buckets[b] = {"t": r["captured_epoch"], "price": r["price"]}
         return [buckets[k] for k in sorted(buckets)]
 
+    def daily_stats(self) -> dict:
+        """当日（本地 0 点起）各子弹的最高/最低价与入库次数。"""
+        import datetime as _dt
+        today0 = int(_dt.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
+        with self._lock:
+            rows = self.conn.execute(
+                """
+                SELECT bullet_name, MAX(price) AS high, MIN(price) AS low, COUNT(*) AS n
+                FROM price_records
+                WHERE captured_epoch >= ?
+                GROUP BY bullet_name
+                """,
+                (today0,),
+            ).fetchall()
+        return {r["bullet_name"]: {"high": r["high"], "low": r["low"], "count": r["n"]} for r in rows}
+
     def stats_overview(self) -> dict:
         with self._lock:
             total = self.conn.execute("SELECT COUNT(*) FROM price_records").fetchone()[0]

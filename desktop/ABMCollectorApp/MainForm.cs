@@ -28,7 +28,6 @@ public class MainForm : Form
     // 设置
     private readonly ListBox _listNav = new();
     private readonly NumericUpDown _numInterval = new() { Minimum = 5, Maximum = 86400, Value = 60 };
-    private readonly TextBox _txtBullets = new() { Multiline = true, ScrollBars = ScrollBars.Vertical };
     private readonly TextBox _txtConfigPath = new();
     private readonly Label _lblPy = new() { AutoSize = true, ForeColor = Color.SteelBlue };
     private readonly TextBox _txtLog = new()
@@ -145,9 +144,6 @@ public class MainForm : Form
 
         AddLabel("采集频率（秒，5~86400）：");
         _numInterval.Width = 120; AddRow(_numInterval);
-
-        AddLabel("子弹清单（每行一个名称）：");
-        _txtBullets.Height = 90; AddRow(_txtBullets);
 
         var bSave = new Button { Text = "保存配置 → config.json", Height = 30, Dock = DockStyle.Top };
         bSave.Click += (_, _) => SaveConfigToFile();
@@ -335,7 +331,6 @@ public class MainForm : Form
         }
         _txtConfigPath.Text = _configPath;
         _numInterval.Value = Math.Clamp(_cfg.IntervalSec, 5, 86400);
-        _txtBullets.Text = string.Join(Environment.NewLine, _cfg.Bullets);
         _listNav.Items.Clear();
         foreach (var t in _cfg.NavTaps)
             if (t.Length >= 2) _listNav.Items.Add($"{t[0]:F3}, {t[1]:F3}");
@@ -344,8 +339,6 @@ public class MainForm : Form
     private void SaveConfigToFile()
     {
         _cfg.IntervalSec = (int)_numInterval.Value;
-        _cfg.Bullets = _txtBullets.Text.Split('\n')
-            .Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
         _cfg.NavTaps = _listNav.Items.Cast<string>()
             .Select(ParseNav)
             .Where(p => p.HasValue)
@@ -353,7 +346,7 @@ public class MainForm : Form
         try
         {
             ConfigService.Save(_configPath, _cfg);
-            Log($"已保存配置：{_configPath}（间隔 {_cfg.IntervalSec}s，点击 {_cfg.NavTaps.Count} 个，子弹 {_cfg.Bullets.Count} 种）");
+            Log($"已保存配置：{_configPath}（间隔 {_cfg.IntervalSec}s，点击 {_cfg.NavTaps.Count} 个，口径 {_cfg.Calibers.Count} 个）");
         }
         catch (Exception ex) { Log("保存失败：" + ex.Message); }
     }

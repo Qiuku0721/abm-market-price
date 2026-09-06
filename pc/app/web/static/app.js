@@ -35,21 +35,24 @@ let currentBullet = null;
 let currentWindow = "7d";
 
 async function refreshLatest() {
-  const data = await j("/api/latest");
+  const [data, daily] = await Promise.all([j("/api/latest"), j("/api/daily")]);
   const names = Object.keys(data).sort();
   const tb = $("#latest-table tbody");
   tb.innerHTML = "";
   if (!names.length) {
-    tb.append(emptyRow(4, "暂无记录 — 等待手机端采集上报"));
+    tb.append(emptyRow(6, "暂无记录 — 等待手机端采集上报"));
     return;
   }
   for (const name of names) {
     const it = data[name];
+    const d = daily[name] || {};
     const tr = el("tr");
     tr.style.cursor = "pointer";
     tr.onclick = () => selectBullet(name);
     tr.append(el("td", null, name));
     tr.append(el("td", "price", fmtPrice(it.price)));
+    tr.append(el("td", "price up", fmtPrice(d.high)));
+    tr.append(el("td", "price down", fmtPrice(d.low)));
     const cls = it.delta == null ? "flat" : it.delta > 0 ? "up" : it.delta < 0 ? "down" : "flat";
     const txt = it.delta == null ? "-" : `${it.delta > 0 ? "+" : ""}${it.delta} (${it.delta_pct}%)`;
     tr.append(el("td", cls, txt));

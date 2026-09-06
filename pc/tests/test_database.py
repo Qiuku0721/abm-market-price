@@ -80,3 +80,15 @@ def test_records_filter_paging(db):
     rows2, _ = db.records(from_epoch=int(base + 3), to_epoch=int(base + 6))
     # i=3..6 -> price 103..106，按时间倒序
     assert [r["price"] for r in rows2] == [106, 105, 104, 103]
+
+
+def test_daily_stats(db):
+    import time as _t
+    ts = _t.time()
+    db.add_records("dev-1", None, [
+        make_record(name="A", price=100, captured_at=iso(ts - 100)),
+        make_record(name="A", price=150, captured_at=iso(ts - 50)),
+        make_record(name="A", price=120, captured_at=iso(ts)),
+    ])
+    d = db.daily_stats()
+    assert d["A"]["high"] == 150 and d["A"]["low"] == 100 and d["A"]["count"] == 3

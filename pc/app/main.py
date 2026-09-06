@@ -121,6 +121,12 @@ def api_latest() -> dict:
     return stats_mod.latest_with_delta(get_db())
 
 
+@app.get("/api/daily")
+def api_daily() -> dict:
+    """当日（本地 0 点起）各子弹最高/最低价。"""
+    return get_db().daily_stats()
+
+
 @app.get("/api/trend")
 def api_trend(bullet: str, window: str = "7d") -> list[dict]:
     cfg = TREND_WINDOWS.get(window)
