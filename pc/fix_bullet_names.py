@@ -18,6 +18,7 @@ def candidate_dbs() -> list[Path]:
     cands = [
         ROOT.parent / "release" / "data" / "abm.db",
         ROOT / "data" / "abm.db",
+        ROOT.parent / "release" / "_internal" / "data" / "abm.db",
     ]
     return [p for p in cands if p.exists()]
 

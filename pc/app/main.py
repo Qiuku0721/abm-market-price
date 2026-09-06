@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
@@ -19,11 +20,27 @@ from .database import Database
 from .models import BulletIn, RecordsBatch
 
 BASE_DIR = Path(__file__).resolve().parent            # pc/app
-# 快照/静态目录：打包后 bundle 只读，用环境变量指向外部可写目录（默认 pc/static）
-PC_STATIC_DIR = Path(os.environ.get("ABM_STATIC_DIR") or (BASE_DIR.parent / "static"))
-# 本地页面资源：发行版用环境变量指向发行目录 web/static（打包后 bundle 内可读）；开发期用默认
-WEB_STATIC_DIR = Path(os.environ.get("ABM_WEB_STATIC") or (BASE_DIR / "web" / "static"))
-# 快照为写入目录：打包后 bundle 只读，用环境变量指向外部可写目录，否则回退默认
+
+
+def _run_base() -> Path:
+    if _frozen():
+        return Path(sys.executable).resolve().parent
+    return BASE_DIR.parent  # 开发：pc/
+
+
+def _frozen() -> bool:
+    return bool(getattr(sys, "frozen", False))
+
+
+# 打包后：数据/页面默认放运行目录（exe 所在），避免写 _internal；开发期用仓库内路径
+if _frozen():
+    _DATA_BASE = Path(sys.executable).resolve().parent
+    PC_STATIC_DIR = Path(os.environ.get("ABM_STATIC_DIR") or (_DATA_BASE / "data"))
+    WEB_STATIC_DIR = Path(os.environ.get("ABM_WEB_STATIC") or (_DATA_BASE / "web" / "static"))
+else:
+    _DATA_BASE = BASE_DIR.parent  # pc/
+    PC_STATIC_DIR = Path(os.environ.get("ABM_STATIC_DIR") or (_DATA_BASE / "static"))
+    WEB_STATIC_DIR = Path(os.environ.get("ABM_WEB_STATIC") or (BASE_DIR / "web" / "static"))
 SNAPSHOTS_DIR = Path(os.environ.get("ABM_SNAPSHOTS_DIR") or (PC_STATIC_DIR / "snapshots"))
 SNAPSHOTS_DIR.mkdir(parents=True, exist_ok=True)
 

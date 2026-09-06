@@ -44,13 +44,19 @@ STANDARD_BULLETS: list[str] = [
 _TAIL = re.compile(r"(子弹|狩猎弹)$")
 
 
+def _halfwidth(s: str) -> str:
+    """全角字符转半角，并将 OCR 常见的乘号/星号统一为字母 x（口径锚用的是 'x'）。"""
+    s = "".join(chr(ord(c) - 0xFEE0) if "\uFF01" <= c <= "\uFF5E" else c for c in s)
+    return s.replace("×", "x").replace("＊", "*")
+
+
 def _norm(s: str) -> str:
-    return re.sub(r"\s+", "", (s or "").lower())
+    return _halfwidth(re.sub(r"\s+", "", (s or "").lower()))
 
 
 def _strip_prefix(name: str) -> tuple[str, bool]:
     """去掉名称开头被 OCR 混入的杂质数字（以口径为锚）。返回 (清洗后文本, 是否匹配到口径)。"""
-    t = re.sub(r"\s+", "", (name or "").strip())
+    t = _halfwidth(re.sub(r"\s+", "", (name or "").strip()))
     if not t:
         return "", False
     low = t.lower()

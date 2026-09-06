@@ -65,7 +65,15 @@ def clean_bullet_name_display(name: str) -> str:
     return normalize_bullet_name(name)
 
 
-DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "abm.db"
+def _run_base() -> Path:
+    """运行目录：打包后为 exe 所在目录（数据放其下 data/，避免写入 _internal）；开发时为 pc/。"""
+    import sys
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent.parent
+
+
+DEFAULT_DB_PATH = _run_base() / "data" / "abm.db"
 
 
 def parse_epoch(iso: str) -> int | None:
