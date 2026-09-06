@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Drawing.Drawing2D;
 
 namespace AbmCollectorApp;
 
@@ -42,7 +41,9 @@ public class MainForm : Form
     public MainForm()
     {
         Text = "ABM 桌面采集控制端";
-        Width = 1280; Height = 780; StartPosition = FormStartPosition.CenterScreen;
+        Width = 1280; Height = 800;
+        MinimumSize = new Size(1100, 700);
+        StartPosition = FormStartPosition.CenterScreen;
         _cfg = new CollectorConfig();
 
         BuildUi();
@@ -52,6 +53,12 @@ public class MainForm : Form
         _cbLive.CheckedChanged += (_, _) =>
         {
             if (_cbLive.Checked) _liveTimer.Start(); else _liveTimer.Stop();
+        };
+        _cbDevices.SelectedIndexChanged += (_, _) =>
+        {
+            if (_adb is null) return;
+            _adb.Serial = _cbDevices.SelectedItem?.ToString();
+            _ = GrabFrameAsync();
         };
     }
 
@@ -65,7 +72,7 @@ public class MainForm : Form
         var btnRefresh = new Button { Text = "刷新设备", Location = new Point(290, 5), Width = 90 };
         btnRefresh.Click += (_, _) => TryInitAdb();
         top.Controls.Add(btnRefresh);
-        _lblAdb.Location = new Point(395, 10); _lblAdb.MaximumSize = new Size(700, 20);
+        _lblAdb.Location = new Point(395, 10); _lblAdb.MaximumSize = new Size(640, 20);
         top.Controls.Add(_lblAdb);
         Controls.Add(top);
 
@@ -79,20 +86,22 @@ public class MainForm : Form
         {
             Dock = DockStyle.Fill,
             Orientation = Orientation.Vertical,
-            SplitterDistance = 860,
+            SplitterDistance = 820,
+            Panel1MinSize = 480,
+            Panel2MinSize = 320,
         };
 
         // 左：预览
         var left = new Panel { Dock = DockStyle.Fill, Padding = new Padding(6) };
-        var tool = new Panel { Dock = DockStyle.Top, Height = 32 };
+        var tool = new Panel { Dock = DockStyle.Top, Height = 34 };
         var btnGrab = new Button { Text = "抓一帧", Width = 90 };
         btnGrab.Click += async (_, _) => await GrabFrameAsync();
         tool.Controls.Add(btnGrab);
-        _cbLive.Location = new Point(100, 7); tool.Controls.Add(_cbLive);
+        _cbLive.Location = new Point(100, 8); tool.Controls.Add(_cbLive);
         var hint = new Label
         {
-            Text = "提示：左键点击画面 = 添加一个「每轮点击点」（红圈序号）；顺序即执行顺序",
-            AutoSize = true, Location = new Point(230, 9), ForeColor = Color.Gray,
+            Text = "左键点画面 = 添加一个每轮点击点（红圈序号）",
+            AutoSize = true, Location = new Point(240, 10), ForeColor = Color.Gray,
         };
         tool.Controls.Add(hint);
         left.Controls.Add(tool);
@@ -104,22 +113,33 @@ public class MainForm : Form
         left.Controls.Add(_pb);
         split.Panel1.Controls.Add(left);
 
-        // 右：设置
-        var right = new Panel { Dock = DockStyle.Fill, Padding = new Padding(6), AutoScroll = true };
+        // 右：设置（TableLayout 自适应宽，避免错位）
         var table = new TableLayoutPanel
         {
-            Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1,
-            Padding = new Padding(2), Width = 320,
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 1,
+            AutoScroll = true,
+            Padding = new Padding(2),
         };
-        void AddRow(Control c) { table.RowCount++; table.Controls.Add(c, 0, table.RowCount - 1); }
-        void AddLabel(string s) => AddRow(new Label { Text = s, AutoSize = true, Margin = new Padding(0, 8, 0, 2) });
+        table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-        AddLabel("每轮导航点击点（红点/列表，先点再存）：");
-        _listNav.Height = 110; _listNav.IntegralHeight = false; AddRow(_listNav);
-        var btns = new FlowLayoutPanel { AutoSize = true };
-        var bDel = new Button { Text = "删除选中", Width = 90 };
+        void AddRow(Control c)
+        {
+            c.Dock = DockStyle.Top;
+            c.Margin = new Padding(0, 2, 0, 2);
+            table.Controls.Add(c, 0, table.RowCount);
+            table.RowCount += 1;
+        }
+        void AddLabel(string s) => AddRow(new Label { Text = s, AutoSize = true, Dock = DockStyle.Top });
+
+        AddLabel("每轮导航点击点（红点/列表；顺序=执行顺序）：");
+        _listNav.Height = 108; _listNav.IntegralHeight = false; AddRow(_listNav);
+        var btns = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Top };
+        var bDel = new Button { Text = "删除选中", Width = 92 };
         bDel.Click += (_, _) => { if (_listNav.SelectedIndex >= 0) { _listNav.Items.RemoveAt(_listNav.SelectedIndex); _pb.Invalidate(); } };
-        var bTest = new Button { Text = "试点最后", Width = 90 };
+        var bTest = new Button { Text = "试点最后", Width = 92 };
         bTest.Click += (_, _) => TestTapLast();
         var bClear = new Button { Text = "清空", Width = 70 };
         bClear.Click += (_, _) => { _listNav.Items.Clear(); _pb.Invalidate(); };
@@ -137,7 +157,7 @@ public class MainForm : Form
         AddRow(bSave);
 
         AddLabel("采集控制（启动 python run_collector.py）：");
-        var pyBtns = new FlowLayoutPanel { AutoSize = true };
+        var pyBtns = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Top };
         var bStart = new Button { Text = "▶ 启动采集", Width = 130 };
         bStart.Click += (_, _) => StartCollector();
         var bStop = new Button { Text = "■ 停止", Width = 100, BackColor = Color.IndianRed };
@@ -148,7 +168,7 @@ public class MainForm : Form
 
         AddLabel("config.json 路径：");
         _txtConfigPath.Height = 26; AddRow(_txtConfigPath);
-        var bBrowse = new Button { Text = "浏览…", Width = 90 };
+        var bBrowse = new Button { Text = "浏览…", Width = 90, Dock = DockStyle.Left };
         bBrowse.Click += (_, _) =>
         {
             using var dlg = new OpenFileDialog { Filter = "config.json|config.json", FileName = _txtConfigPath.Text };
@@ -156,6 +176,7 @@ public class MainForm : Form
         };
         AddRow(bBrowse);
 
+        var right = new Panel { Dock = DockStyle.Fill, Padding = new Padding(4) };
         right.Controls.Add(table);
         split.Panel2.Controls.Add(right);
         Controls.Add(split);
@@ -186,7 +207,7 @@ public class MainForm : Form
             _cbDevices.Items.Clear();
             foreach (var d in devices) _cbDevices.Items.Add(d);
             if (devices.Count > 0) { _cbDevices.SelectedIndex = 0; }
-            else { Log("未检测到在线设备：请插 USB 并允许调试授权"); }
+            else { Log("未检测到在线设备：请插 USB 并允许调试授权"); _pb.Invalidate(); }
         }
         catch (Exception ex) { Log("设备列表失败：" + ex.Message); }
     }
@@ -194,7 +215,9 @@ public class MainForm : Form
     // ---------------- 预览与标定 ----------------
     private async Task GrabFrameAsync()
     {
-        if (_adb is null || _cbDevices.SelectedItem is not string serial || _busy) return;
+        if (_adb is null || _busy) return;
+        var serial = _cbDevices.SelectedItem?.ToString() ?? _adb.Serial;
+        if (string.IsNullOrEmpty(serial)) return;
         _busy = true;
         try
         {
@@ -230,7 +253,7 @@ public class MainForm : Form
         if (p is null) return;
         try
         {
-            _adb.Serial = _cbDevices.SelectedItem?.ToString();
+            _adb.Serial = _cbDevices.SelectedItem?.ToString() ?? _adb.Serial;
             _adb.Tap((int)(p.Value.Item1 * _imgW), (int)(p.Value.Item2 * _imgH));
             Log($"已试点 ({p.Value.Item1:F3},{p.Value.Item2:F3})");
         }
@@ -239,7 +262,13 @@ public class MainForm : Form
 
     private void Pb_Paint(object? sender, PaintEventArgs e)
     {
-        if (_imgW == 0 || _imgH == 0) return;
+        if (_imgW == 0 || _imgH == 0)
+        {
+            using var f = new Font("微软雅黑", 12f);
+            e.Graphics.DrawString("未获取画面：请在上方选设备后点「抓一帧」，并确认手机已插线/允许USB调试",
+                f, Brushes.Gray, 20, 20);
+            return;
+        }
         var box = ImageDisplayRect();
         var scale = box.Width * 1.0 / _imgW;
         for (int i = 0; i < _listNav.Items.Count; i++)
@@ -359,7 +388,7 @@ public class MainForm : Form
         _python.BeginOutputReadLine();
         _python.BeginErrorReadLine();
         _lblPy.Text = "状态：采集中（python 子进程运行中）";
-        Log("已启动采集（可到网页 http://127.0.0.1:8600 查看数据）");
+        Log("已启动采集（数据可到 http://127.0.0.1:8600 查看）");
     }
 
     private void StopCollector()
