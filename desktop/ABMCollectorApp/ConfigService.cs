@@ -15,8 +15,9 @@ public class CollectorConfig
     [JsonPropertyName("interval_sec")] public int IntervalSec { get; set; } = 60;
     [JsonPropertyName("nav_taps")] public List<double[]> NavTaps { get; set; } = new();
     [JsonPropertyName("left_panel")] public PanelCfg LeftPanel { get; set; } = new(0.12, 0.60, 0.46, 300);
-    [JsonPropertyName("grid_panel")] public PanelCfg GridPanel { get; set; } = new(0.62, 0.72, 0.30, 400);
+    [JsonPropertyName("grid_panel")] public PanelCfg GridPanel { get; set; } = new(0.62, 0.72, 0.45, 400);
     [JsonPropertyName("grid_back_to_top_swipes")] public int GridBackToTopSwipes { get; set; } = 4;
+    [JsonPropertyName("max_grid_pages")] public int MaxGridPages { get; set; } = 6;
     [JsonPropertyName("grid_scroll_after_caliber")] public bool GridScrollAfterCaliber { get; set; } = true;
     [JsonPropertyName("price_below_row_px")] public int PriceBelowRowPx { get; set; } = 120;
     [JsonPropertyName("max_left_scrolls")] public int MaxLeftScrolls { get; set; } = 8;

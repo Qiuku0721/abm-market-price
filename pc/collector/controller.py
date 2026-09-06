@@ -73,12 +73,14 @@ class CollectorController:
         self.db.register_snapshot(sid, rel, self.device_id)
         return sid
 
-    def _store_record(self, name: str, price: int, img: np.ndarray, line: OcrLine) -> None:
-        pad = 10
-        H, W = img.shape[:2]
-        y0, y1 = max(0, line.top - pad), min(H, line.bottom + pad)
-        x0, x1 = max(0, line.left - pad), min(W, line.right + pad)
-        sid = self._snapshot_save(img[y0:y1, x0:x1]) if (y1 > y0 and x1 > x0) else None
+    def _store_record(self, name: str, price: int, img: np.ndarray | None, line: OcrLine | None) -> None:
+        sid = None
+        if img is not None and line is not None:
+            pad = 10
+            H, W = img.shape[:2]
+            y0, y1 = max(0, line.top - pad), min(H, line.bottom + pad)
+            x0, x1 = max(0, line.left - pad), min(W, line.right + pad)
+            sid = self._snapshot_save(img[y0:y1, x0:x1]) if (y1 > y0 and x1 > x0) else None
         now = datetime.now().astimezone().isoformat(timespec="seconds")
         rec = SimpleNamespace(
             bullet_name=name,
@@ -97,30 +99,43 @@ class CollectorController:
 
     # ---------- 左栏口径定位与点击 ----------
     def _tap_left_caliber(self, caliber: str, W: int, H: int) -> bool:
-        """在左栏滚动直到出现目标口径文本，点击其中心。找不到返回 False。"""
+        """在左栏滚动找目标口径：先向下小幅滑动，找不到转为向上滑动。命中即点击。"""
         lp = self.cfg.get("left_panel", {})
         x = int(W * lp.get("x", 0.12))
-        from_y = int(H * lp.get("from_y", 0.72))
-        to_y = int(H * lp.get("to_y", 0.30))
-        dur = int(lp.get("duration_ms", 250))
+        from_y = int(H * lp.get("from_y", 0.60))
+        to_y = int(H * lp.get("to_y", 0.46))
+        dur = int(lp.get("duration_ms", 300))
         key = compact(caliber)
-        for _ in range(int(self.cfg.get("max_left_scrolls", 8))):
+        max_tries = int(self.cfg.get("max_left_scrolls", 8))
+
+        def _scan_and_tap() -> bool:
             img = self._grab()
             self._debug_save(img, "left_scan.jpg")
             h, w = img.shape[:2]
-            left_img = img[:, : int(w * 0.38)]
-            lines = self.ocr.scan(left_img)
+            lines = self.ocr.scan(img[:, : int(w * 0.38)])
             hit = [l for l in lines if key in compact(l.text) and l.height > 8]
-            if hit:
-                target = max(hit, key=lambda l: l.bottom)
-                tx = int((target.left + target.right) / 2)
-                ty = int((target.top + target.bottom) / 2)
-                logger.info("命中口径 %s，点击 (%d,%d)", caliber, tx, ty)
-                self.device.tap(tx, ty)
-                self._sleep()
+            if not hit:
+                return False
+            target = max(hit, key=lambda l: l.bottom)
+            tx = int((target.left + target.right) / 2)
+            ty = int((target.top + target.bottom) / 2)
+            logger.info("命中口径 %s，点击 (%d,%d)", caliber, tx, ty)
+            self.device.tap(tx, ty)
+            self._sleep()
+            return True
+
+        # 向下找（内容向上滚，看更下面的口径）
+        for _ in range(max_tries):
+            if _scan_and_tap():
                 return True
-            # 未找到 → 左栏内容向上滚（看更下面的口径）
             self.device.swipe(x, from_y, x, to_y, dur)
+            self._sleep()
+        # 向下未找到 → 转向上找（内容向下滚回）
+        logger.info("向下未找到 %s，转向上查找", caliber)
+        for _ in range(max_tries):
+            if _scan_and_tap():
+                return True
+            self.device.swipe(x, to_y, x, from_y, dur)
             self._sleep()
         logger.warning("左栏未找到口径：%s", caliber)
         return False
@@ -170,6 +185,37 @@ class CollectorController:
             self.device.swipe(x, to_y, x, from_y, dur)
             self._sleep()
 
+    def _collect_grid_records(self, caliber: str, W: int, H: int) -> list[tuple[str, int]]:
+        """枚举该口径右侧网格全部子弹：回顶部后逐屏下滑、合并去重，
+        连续两屏内容无变化判到底即停；价格取卡片底部（名称行下方）。"""
+        cfg = self.cfg
+        self._grid_scroll_back_to_top(W, H)
+        merged: dict[str, int] = {}
+        prev_hash: int | None = None
+        stagnant = 0
+        max_pages = int(cfg.get("max_grid_pages", 6))
+        for _ in range(max_pages):
+            img = self._grab()
+            self._debug_save(img, f"grid_{caliber}.jpg")
+            H, W = img.shape[:2]
+            lines = self.ocr.scan(img)
+            for name, price, _nl in self._extract_grid_records(img, lines, caliber, W, H):
+                if name not in merged:
+                    merged[name] = price
+            h = hash(tuple(compact(l.text) for l in lines))
+            stagnant = stagnant + 1 if h == prev_hash else 0
+            prev_hash = h
+            if stagnant >= 2:
+                logger.info("口径 %s 网格到底（%d 屏无变化），停止", caliber, stagnant)
+                break
+            gp = cfg.get("grid_panel", {})
+            x = int(W * gp.get("x", 0.62))
+            from_y = int(H * gp.get("from_y", 0.72))
+            to_y = int(H * gp.get("to_y", 0.45))
+            self.device.swipe(x, from_y, x, to_y, int(gp.get("duration_ms", 400)))
+            self._sleep()
+        return list(merged.items())
+
     # ---------- 单轮（口径遍历） ----------
     def run_round(self) -> dict:
         cfg = self.cfg
@@ -188,36 +234,12 @@ class CollectorController:
             if not self._tap_left_caliber(caliber, W, H):
                 missed.append(caliber)
                 continue
-            # 先回顶部，确保从该口径网格顶部开始（上一口径残留位置会导致顶部第一行漏采）
-            self._grid_scroll_back_to_top(W, H)
-
-            img = self._grab()
-            self._debug_save(img, f"grid_{caliber}.jpg")
-            H, W = img.shape[:2]
-            lines = self.ocr.scan(img)
-            recs = list(self._extract_grid_records(img, lines, caliber, W, H))
-            seen = {name for name, _, _ in recs}
-
-            # 再下滑一次，让最下一行价格露出，补采并去重，避免种类不全
-            if cfg.get("grid_scroll_after_caliber", True):
-                gp = cfg.get("grid_panel", {})
-                x = int(W * gp.get("x", 0.62))
-                from_y = int(H * gp.get("from_y", 0.72))
-                to_y = int(H * gp.get("to_y", 0.30))
-                self.device.swipe(x, from_y, x, to_y, int(gp.get("duration_ms", 400)))
-                self._sleep()
-                img2 = self._grab()
-                H, W = img2.shape[:2]
-                lines2 = self.ocr.scan(img2)
-                for name, price, nl in self._extract_grid_records(img2, lines2, caliber, W, H):
-                    if name not in seen:
-                        seen.add(name)
-                        recs.append((name, price, nl))
-
-            for name, price, nl in recs:
-                self._store_record(name, price, img, nl)
+            # 逐屏枚举该口径全部卡片（回顶+下滑+合并去重+到底停止）
+            records = self._collect_grid_records(caliber, W, H)
+            for name, price in records:
+                self._store_record(name, price, None, None)
                 processed += 1
-            logger.info("口径 %s：记录 %d 条", caliber, len(recs))
+            logger.info("口径 %s：记录 %d 条", caliber, len(records))
 
         logger.info("轮完成：共记录 %d 条，漏口径 %s", processed, missed or "无")
         return {"processed": processed, "missed": missed}
