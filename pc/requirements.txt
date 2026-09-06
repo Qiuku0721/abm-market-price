@@ -6,6 +6,9 @@ openpyxl>=3.1
 # --- PC 端采集控制器（adb 截屏 + RapidOCR）---
 rapidocr-onnxruntime>=1.4.0
 pillow>=10.0
+# GPU 加速（可选，Windows 任意 DX12 显卡，免装 CUDA；无 GPU 或驱动不支持时自动回退 CPU）：
+#   pip uninstall -y onnxruntime && pip install onnxruntime-directml
+#   采集器已默认开启 det/rec/cls 的 DirectML（collector/ocr.py）。
 
 # --- 测试（可选）---
 pytest>=8.0

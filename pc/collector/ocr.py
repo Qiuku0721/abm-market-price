@@ -44,8 +44,12 @@ class OcrEngine:
                 "缺少 OCR 依赖：请先执行  pip install -r requirements.txt "
                 "（或单独安装 rapidocr-onnxruntime）"
             ) from e
-        logger.info("初始化 RapidOCR（首次会下载模型，约 15MB）…")
-        self._engine = RapidOCR()
+        logger.info("初始化 RapidOCR（启用 DirectML GPU 加速，若显卡不支持将自动回退 CPU）…")
+        try:
+            self._engine = RapidOCR(det_use_dml=True, rec_use_dml=True, cls_use_dml=True)
+        except TypeError:
+            # 旧版本 RapidOCR 不支持 use_dml 参数 → 用 CPU 默认
+            self._engine = RapidOCR()
 
     MAX_DIM = 1600  # 识别前把长边压到该值，显著降低 CPU（像素约减 55%+），坐标自动还原
 
