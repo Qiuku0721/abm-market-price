@@ -14,7 +14,7 @@ public class CollectorConfig
     [JsonPropertyName("bullets")] public List<string> Bullets { get; set; } = new() { "M80 5.56x45" };
     [JsonPropertyName("interval_sec")] public int IntervalSec { get; set; } = 60;
     [JsonPropertyName("nav_taps")] public List<double[]> NavTaps { get; set; } = new();
-    [JsonPropertyName("left_panel")] public PanelCfg LeftPanel { get; set; } = new(0.12, 0.72, 0.30, 250);
+    [JsonPropertyName("left_panel")] public PanelCfg LeftPanel { get; set; } = new(0.12, 0.60, 0.46, 300);
     [JsonPropertyName("grid_panel")] public PanelCfg GridPanel { get; set; } = new(0.62, 0.72, 0.30, 400);
     [JsonPropertyName("grid_scroll_after_caliber")] public bool GridScrollAfterCaliber { get; set; } = true;
     [JsonPropertyName("price_below_row_px")] public int PriceBelowRowPx { get; set; } = 120;

@@ -1,9 +1,36 @@
 {
+  "calibers": [
+    "7.62x39毫米",
+    "7.62x54毫米",
+    "5.56x45毫米",
+    "9x19毫米",
+    "12x70毫米",
+    "5.7x28毫米",
+    "9x39毫米",
+    "5.45x39毫米",
+    "12.7x99毫米",
+    "5.8x42毫米"
+  ],
   "bullets": [
     "M80"
   ],
   "interval_sec": 60,
   "nav_taps": [],
+  "left_panel": {
+    "x": 0.12,
+    "from_y": 0.6,
+    "to_y": 0.46,
+    "duration_ms": 300
+  },
+  "grid_panel": {
+    "x": 0.62,
+    "from_y": 0.72,
+    "to_y": 0.3,
+    "duration_ms": 400
+  },
+  "grid_scroll_after_caliber": true,
+  "price_below_row_px": 120,
+  "max_left_scrolls": 8,
   "scroll": {
     "from_y": 0.72,
     "to_y": 0.3,
@@ -17,32 +44,5 @@
   "stagnant_limit": 2,
   "action_delay_ms": 500,
   "debug_save": 1,
-  "save_snapshots": true,
-  "calibers": [
-    "7.62x39毫米",
-    "7.62x54毫米",
-    "5.56x45毫米",
-    "9x19毫米",
-    "12x70毫米",
-    "5.7x28毫米",
-    "9x39毫米",
-    "5.45x39毫米",
-    "12.7x99毫米",
-    "5.8x42毫米"
-  ],
-  "left_panel": {
-    "x": 0.12,
-    "from_y": 0.72,
-    "to_y": 0.3,
-    "duration_ms": 250
-  },
-  "grid_panel": {
-    "x": 0.62,
-    "from_y": 0.72,
-    "to_y": 0.3,
-    "duration_ms": 400
-  },
-  "grid_scroll_after_caliber": true,
-  "price_below_row_px": 120,
-  "max_left_scrolls": 8
+  "save_snapshots": true
 }
