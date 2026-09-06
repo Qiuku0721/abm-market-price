@@ -15,6 +15,16 @@ android {
         versionName = "0.1.0"
     }
 
+    signingConfigs {
+        create("release") {
+            val home = System.getProperty("user.home")
+            storeFile = file("$home/.android/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -27,16 +37,6 @@ android {
             // 自动生成的 debug keystore（先跑过一次 assembleDebug 即会存在）。
             // 如需正式签名，请自行 keytool 生成 keystore 并替换此配置。
             signingConfig = signingConfigs.getByName("release")
-        }
-    }
-
-    signingConfigs {
-        create("release") {
-            val home = System.getProperty("user.home")
-            storeFile = file("$home/.android/debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
         }
     }
 

@@ -8,6 +8,7 @@ venv/
 pc/data/
 pc/static/snapshots/
 pc/.pytest_cache/
+auto-build.log
 
 # Android / Gradle
 android/.gradle/
@@ -26,3 +27,4 @@ Thumbs.db
 .idea/
 *.iml
 .vscode/
+.reasonix/

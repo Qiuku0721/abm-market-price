@@ -17,6 +17,20 @@ HTTP + 文件队列 断网重传 ──── 局域网 ────►  └─ 
 - 🎓 新手使用教程：`docs/TUTORIAL.md`
 - 详细设计：`docs/PLAN.md` ｜ 两端协议：`docs/PROTOCOL.md` ｜ 环境安装与验证：`docs/SETUP.md`
 
+## 自动构建（保存代码即自动编译）
+
+**双击 `auto-build.bat`** 启动监听（窗口保持开启），之后每次保存：
+
+- `android/app/src` 或构建配置改动 → 自动 `assembleDebug`，产物刷新到
+  `android/app/build/outputs/apk/debug/app-debug.apk`；
+- `pc/` 代码改动 → 自动语法检查（已运行过一次 `pc\scripts\start.bat` 建立 `.venv` 后则跑 `pytest`）。
+
+构建日志写入根目录 `auto-build.log`，按 Ctrl+C 停止监听。
+
+> 环境说明：自动构建固定使用 `~\.jdks` 下的 JDK（优先 21/17）与 `android/local.properties` 指向的
+> Android SDK；Gradle wrapper 版本为 8.11.1（支持 JDK 21）。如首次手动编译：
+> `set JAVA_HOME=%USERPROFILE%\.jdks\ms-21.0.11 && cd android && gradlew.bat assembleDebug`
+
 ## 快速开始
 
 ### 电脑端（Python 3.10+）
