@@ -19,9 +19,12 @@ from .database import Database
 from .models import BulletIn, RecordsBatch
 
 BASE_DIR = Path(__file__).resolve().parent            # pc/app
-PC_STATIC_DIR = BASE_DIR.parent / "static"            # pc/static（含 snapshots/ 子目录）
-WEB_STATIC_DIR = BASE_DIR / "web" / "static"          # 本地页面资源
-SNAPSHOTS_DIR = PC_STATIC_DIR / "snapshots"
+# 快照/静态目录：打包后 bundle 只读，用环境变量指向外部可写目录（默认 pc/static）
+PC_STATIC_DIR = Path(os.environ.get("ABM_STATIC_DIR") or (BASE_DIR.parent / "static"))
+# 本地页面资源：发行版用环境变量指向发行目录 web/static（打包后 bundle 内可读）；开发期用默认
+WEB_STATIC_DIR = Path(os.environ.get("ABM_WEB_STATIC") or (BASE_DIR / "web" / "static"))
+# 快照为写入目录：打包后 bundle 只读，用环境变量指向外部可写目录，否则回退默认
+SNAPSHOTS_DIR = Path(os.environ.get("ABM_SNAPSHOTS_DIR") or (PC_STATIC_DIR / "snapshots"))
 SNAPSHOTS_DIR.mkdir(parents=True, exist_ok=True)
 
 PROTOCOL_VERSION = "1"

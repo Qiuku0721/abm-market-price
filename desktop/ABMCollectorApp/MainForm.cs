@@ -19,7 +19,8 @@ public class MainForm : Form
     private readonly PictureBox _pb = new();
     private readonly CheckBox _cbLive = new() { Text = "实时预览(1s)", AutoSize = true };
     private readonly System.Windows.Forms.Timer _liveTimer = new() { Interval = 1000 };
-    private int _imgW, _imgH;
+    private int _imgW, _imgH;      // 预览显示（缩略）图尺寸
+    private int _fullW, _fullH;    // 手机实际截图尺寸（用于试点点击像素换算）
 
     // 设备
     private readonly ComboBox _cbDevices = new() { DropDownStyle = ComboBoxStyle.DropDownList };
@@ -225,10 +226,16 @@ public class MainForm : Form
             var png = await Task.Run(_adb.Screenshot);
             using var ms = new MemoryStream(png);
             var bmp = new Bitmap(ms);
+            var origW = bmp.Width; var origH = bmp.Height;
+            // 预览帧先缩略（≤1280px 宽），大幅降低每帧渲染/解码的 CPU
+            var thumb = bmp.Width > 1280
+                ? new Bitmap(bmp, 1280, (int)(bmp.Height * 1280.0 / bmp.Width))
+                : bmp;
+            if (!ReferenceEquals(thumb, bmp)) bmp.Dispose();
             var old = _pb.Image;
-            _pb.Image = bmp;
+            _pb.Image = thumb;
             old?.Dispose();
-            _imgW = bmp.Width; _imgH = bmp.Height;
+            _imgW = thumb.Width; _imgH = thumb.Height; _fullW = origW; _fullH = origH;
             _pb.Invalidate();
         }
         catch (Exception ex) { Log("抓帧失败：" + ex.Message); }
@@ -254,7 +261,7 @@ public class MainForm : Form
         try
         {
             _adb.Serial = _cbDevices.SelectedItem?.ToString() ?? _adb.Serial;
-            _adb.Tap((int)(p.Value.Item1 * _imgW), (int)(p.Value.Item2 * _imgH));
+            _adb.Tap((int)(p.Value.Item1 * _fullW), (int)(p.Value.Item2 * _fullH));
             Log($"已试点 ({p.Value.Item1:F3},{p.Value.Item2:F3})");
         }
         catch (Exception ex) { Log("试点失败：" + ex.Message); }

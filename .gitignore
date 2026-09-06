@@ -35,3 +35,6 @@ desktop/**/bin/
 desktop/**/obj/
 pc/collector/debug/
 desktop/dist/
+pc/dist/
+pc/build/
+*.spec

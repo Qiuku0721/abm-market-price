@@ -112,7 +112,7 @@ class CollectorController:
             img = self._grab()
             self._debug_save(img, "left_scan.jpg")
             h, w = img.shape[:2]
-            lines = self.ocr.scan(img[:, : int(w * 0.38)])
+            lines = self.ocr.scan(img[:, : int(w * 0.26)])
             hit = [l for l in lines if key in compact(l.text) and l.height > 8 and l.right < int(w * 0.27)]
             if not hit:
                 return False
