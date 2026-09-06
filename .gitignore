@@ -34,3 +34,4 @@ Thumbs.db
 desktop/**/bin/
 desktop/**/obj/
 pc/collector/debug/
+desktop/dist/

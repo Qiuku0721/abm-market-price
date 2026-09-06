@@ -86,9 +86,6 @@ public class MainForm : Form
         {
             Dock = DockStyle.Fill,
             Orientation = Orientation.Vertical,
-            SplitterDistance = 820,
-            Panel1MinSize = 480,
-            Panel2MinSize = 320,
         };
 
         // 左：预览
@@ -180,6 +177,13 @@ public class MainForm : Form
         right.Controls.Add(table);
         split.Panel2.Controls.Add(right);
         Controls.Add(split);
+
+        // 窗体布局完成后再设置分隔条位置（避免构造期 MinSize 校验冲突）
+        var splitRef = split;
+        Load += (_, _) =>
+        {
+            try { splitRef.SplitterDistance = (int)(ClientSize.Width * 0.62); } catch { }
+        };
     }
 
     // ---------------- 设备 ----------------
