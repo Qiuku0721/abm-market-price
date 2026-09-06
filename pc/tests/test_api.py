@@ -6,7 +6,8 @@ HDR = {"X-ABM-Protocol": "1"}
 
 
 def _seed_one(client, price=320, seconds=0):
-    base = datetime(2025, 9, 6, 4, 0, 0).timestamp()
+    # 用「当前时间」造数，保证 /api/trend 的窗口查询（1h/1d/…回看）能取到数据
+    base = datetime.now().timestamp()
     body = {
         "device_id": "dev-api-1",
         "records": [make_record(price=price, captured_at=iso(base + seconds))],

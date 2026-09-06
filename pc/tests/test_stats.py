@@ -2,7 +2,7 @@ from datetime import datetime
 
 from app.stats import latest_with_delta
 
-from .helpers import iso, make_record
+from .helpers import iso, make_record_obj as make_record
 
 
 def test_delta_up_down_none(db):

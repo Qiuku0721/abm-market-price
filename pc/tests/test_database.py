@@ -2,7 +2,7 @@ from datetime import datetime
 
 from app.database import parse_epoch
 
-from .helpers import iso, make_record
+from .helpers import iso, make_record_obj as make_record
 
 
 def test_parse_epoch_variants():
@@ -78,4 +78,5 @@ def test_records_filter_paging(db):
     assert total == 10 and len(rows) == 4
 
     rows2, _ = db.records(from_epoch=int(base + 3), to_epoch=int(base + 6))
-    assert [r["price"] for r in rows2] == [107, 106, 105, 104]  # 按时间倒序
+    # i=3..6 -> price 103..106，按时间倒序
+    assert [r["price"] for r in rows2] == [106, 105, 104, 103]
