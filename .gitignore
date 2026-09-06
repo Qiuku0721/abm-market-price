@@ -31,3 +31,5 @@ Thumbs.db
 *.iml
 .vscode/
 .reasonix/
+desktop/**/bin/
+desktop/**/obj/

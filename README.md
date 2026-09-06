@@ -19,6 +19,8 @@ HTTP + 文件队列 断网重传 ── USB/Wi-Fi ────►  └─ CSV / 
 ```
 
 - 🎓 新手使用教程：`docs/TUTORIAL.md`
+- 🎮 C# 桌面控制端（预览+点位标定+频率+启停采集）：`docs/DESKTOP.md`
+- ⭐ PC 采集控制器（推荐，python）：`docs/PC_COLLECTOR.md`
 - 详细设计：`docs/PLAN.md` ｜ 两端协议：`docs/PROTOCOL.md` ｜ 环境安装与验证：`docs/SETUP.md`
 
 ## 自动构建（保存代码即自动编译）
