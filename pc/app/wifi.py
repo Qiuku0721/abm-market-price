@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import time
 from pathlib import Path
 
 
@@ -55,8 +56,11 @@ def _parse_mdns(text: str) -> list[dict]:
 
 
 def mdns_scan(adb: str | None = None) -> list[dict]:
+    """先激活 adb discovery，再扫描（部分环境需先 check 才收到广播）。"""
     adb = adb or find_adb()
     try:
+        _run(adb, ["mdns", "check"], timeout=6)
+        time.sleep(1.2)
         p = _run(adb, ["mdns", "services"], timeout=10)
     except subprocess.TimeoutExpired:
         return []

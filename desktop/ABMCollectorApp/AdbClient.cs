@@ -117,6 +117,8 @@ public class AdbClient
     /// <summary>自动发现局域网无线调试设备（adb mdns services）。返回 "名称 | ip:端口" 列表。</summary>
     public List<string> MdnsServices()
     {
+        try { Run(new[] { "mdns", "check" }); } catch { }
+        System.Threading.Thread.Sleep(1200);
         var list = new List<string>();
         foreach (var raw in Run(new[] { "mdns", "services" }))
         {
