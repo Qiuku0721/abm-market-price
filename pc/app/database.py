@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import sqlite3
@@ -54,6 +55,16 @@ CREATE INDEX IF NOT EXISTS idx_records_bullet_time
     ON price_records (bullet_name, captured_epoch);
 CREATE INDEX IF NOT EXISTS idx_records_time
     ON price_records (captured_epoch);
+CREATE TABLE IF NOT EXISTS reports (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    kind        TEXT NOT NULL,
+    period_key  TEXT NOT NULL,
+    title       TEXT NOT NULL,
+    content     TEXT NOT NULL,
+    stats       TEXT,
+    created_at  TEXT NOT NULL,
+    UNIQUE (kind, period_key)
+);
 """
 
 # 用于清洗被 OCR 污染的子弹名（以已知口径为锚 + 匹配标准名清单）
@@ -314,6 +325,43 @@ class Database:
                 (today0,),
             ).fetchall()
         return {r["bullet_name"]: {"high": r["high"], "low": r["low"], "count": r["n"]} for r in rows}
+
+    def insert_report(self, kind: str, period_key: str, title: str,
+                      content: str, stats: dict | None = None) -> bool:
+        """插入一份财报；同 kind+period 已存在则忽略（幂等）。返回是否新插入。"""
+        with self._lock:
+            cur = self.conn.execute(
+                """
+                INSERT OR IGNORE INTO reports (kind, period_key, title, content, stats, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (kind, period_key, title, content,
+                 json.dumps(stats, ensure_ascii=False) if stats else None, utc_now_iso()),
+            )
+            self.conn.commit()
+            return cur.rowcount == 1
+
+    def list_reports(self, kind: str | None = None, limit: int = 30) -> list[dict]:
+        where = "WHERE kind = ?" if kind else ""
+        args: tuple = (kind,) if kind else ()
+        with self._lock:
+            rows = self.conn.execute(
+                f"SELECT * FROM reports {where} ORDER BY id DESC LIMIT ?",
+                (*args, int(limit)),
+            ).fetchall()
+        out = []
+        for r in rows:
+            d = dict(r)
+            try:
+                d["stats"] = json.loads(d["stats"]) if d.get("stats") else None
+            except (ValueError, TypeError):
+                d["stats"] = None
+            out.append(d)
+        return out
+
+    def latest_report(self, kind: str) -> dict | None:
+        rows = self.list_reports(kind, limit=1)
+        return rows[0] if rows else None
 
     def stats_overview(self) -> dict:
         with self._lock:

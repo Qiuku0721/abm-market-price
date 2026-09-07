@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import re
 import sys
 import time
-from datetime import datetime
+from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
@@ -71,7 +73,46 @@ def configure_db_for_tests(path: str | Path | None = None) -> Database:
     return _db
 
 
-app = FastAPI(title="ABM 价格记录服务", version="1.0")
+async def _scheduler(db) -> None:
+    """后台调度：每个整点生成小时财报；每天 20:00 生成当日财报。幂等（表内 UNIQUE 去重）。"""
+    last_hour = last_day = None
+    while True:
+        now = datetime.now()
+        key_hour = now.strftime("%Y-%m-%d %H:00")
+        key_day = now.strftime("%Y-%m-%d")
+        if now.minute <= 1:
+            if key_hour != last_hour:
+                lb = now.replace(minute=0, second=0, microsecond=0)
+                try:
+                    from . import reports as R
+                    R.generate(db, "hourly", int(lb.timestamp()),
+                               int((lb + timedelta(hours=1)).timestamp()), key_hour)
+                except Exception as e:  # noqa: BLE001
+                    print(f"[scheduler] hourly report 失败：{e}")
+                last_hour = key_hour
+            if now.hour == 20 and key_day != last_day:
+                lb = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                try:
+                    from . import reports as R
+                    R.generate(db, "daily", int(lb.timestamp()), int(now.timestamp()), key_day)
+                except Exception as e:  # noqa: BLE001
+                    print(f"[scheduler] daily report 失败：{e}")
+                last_day = key_day
+        await asyncio.sleep(20)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(_scheduler(get_db()))
+    yield
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+
+app = FastAPI(title="ABM 价格记录服务", version="1.0", lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=str(WEB_STATIC_DIR)), name="assets")
 app.mount("/static", StaticFiles(directory=str(PC_STATIC_DIR)), name="static")
 
@@ -230,3 +271,35 @@ def export_excel(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# ---------- 财报 ----------
+
+@app.get("/api/reports")
+def api_reports(kind: str | None = None, limit: int = 30) -> list[dict]:
+    limit = min(max(limit, 1), 100)
+    return get_db().list_reports(kind, limit)
+
+
+@app.get("/api/report/latest")
+def api_report_latest(kind: str = "daily") -> dict:
+    return get_db().latest_report(kind) or {}
+
+
+@app.post("/api/reports/generate")
+def api_report_generate(kind: str = "daily") -> dict:
+    from . import reports as reports_mod
+    now = datetime.now()
+    if kind == "hourly":
+        key = now.strftime("%Y-%m-%d %H:00")
+        lb = now.replace(minute=0, second=0, microsecond=0)
+        start, end = int(lb.timestamp()), int((lb + timedelta(hours=1)).timestamp())
+    else:
+        kind = "daily"
+        key = now.strftime("%Y-%m-%d")
+        lb = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        start, end = int(lb.timestamp()), int(now.timestamp())
+    rep = reports_mod.generate(get_db(), kind, start, end, key)
+    if rep is None:
+        return {"ok": False, "reason": "该时段暂无价格数据"}
+    return {"ok": True, "report": rep}

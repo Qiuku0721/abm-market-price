@@ -60,7 +60,23 @@
       <thead><tr><th>名称</th><th>启用</th><th>操作</th></tr></thead>
       <tbody></tbody>
     </table>
+  <section>
+    <h2>财报
+      <button id="btn-gen-daily" class="mini">生成当日财报</button>
+      <button id="btn-gen-hourly" class="mini">生成当前小时财报</button>
+    </h2>
+    <div class="row">
+      <label>类型：</label>
+      <select id="report-kind">
+        <option value="daily">当日财报（20:00 自动）</option>
+        <option value="hourly">小时财报（每个整点自动）</option>
+      </select>
+      <button id="btn-refresh-reports" class="mini">刷新</button>
+    </div>
+    <div id="report-list" class="report-list"></div>
+    <pre id="report-content" class="report"></pre>
   </section>
+
 </main>
 
 <script src="/assets/app.js"></script>

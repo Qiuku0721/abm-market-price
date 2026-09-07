@@ -175,6 +175,39 @@ async function refreshBullets() {
   }
 }
 
+async function refreshReports() {
+  const kind = $("#report-kind").value;
+  const list = await j(`/api/reports?kind=${encodeURIComponent(kind)}&limit=30`);
+  const box = $("#report-list");
+  box.innerHTML = "";
+  if (!list.length) {
+    box.textContent = "暂无财报（可点上方按钮立即生成；每个整点/每天20:00也会自动生成）";
+    $("#report-content").textContent = "-";
+    return;
+  }
+  for (const r of list) {
+    const a = document.createElement("a");
+    a.className = "report-item";
+    a.href = "#";
+    a.textContent = r.title + "  ·  " + (r.created_at || "");
+    a.onclick = (e) => { e.preventDefault(); showReport(r); };
+    box.append(a, document.createElement("div"));
+  }
+  showReport(list[0]);
+}
+
+function showReport(r) {
+  $("#report-content").textContent = r.content || "(无内容)";
+}
+
+async function genReport(kind) {
+  try {
+    const res = await j(`/api/reports/generate?kind=${kind}`, { method: "POST" });
+    if (!res.ok) { alert("生成失败：" + res.reason); return; }
+  } catch (e) { alert("生成失败：" + e.message); }
+  refreshReports();
+}
+
 function initEvents() {
   $("#btn-refresh").onclick = () => Promise.all([refreshOverview(), refreshLatest(), refreshBullets()]).catch(alert);
   $("#trend-bullet").onchange = (e) => selectBullet(e.target.value);
@@ -197,6 +230,10 @@ function initEvents() {
     $("#bullet-new").value = "";
     refreshBullets();
   };
+  $("#btn-gen-daily").onclick = () => genReport("daily");
+  $("#btn-gen-hourly").onclick = () => genReport("hourly");
+  $("#btn-refresh-reports").onclick = () => refreshReports();
+  $("#report-kind").onchange = () => refreshReports();
 }
 
 async function boot() {
@@ -204,6 +241,7 @@ async function boot() {
   await Promise.all([refreshOverview(), refreshLatest(), refreshBullets()]);
   await refreshTrend();
   refreshRecords();
-  setInterval(() => { refreshOverview(); refreshLatest(); }, 15000);
+  refreshReports();
+  setInterval(() => { refreshOverview(); refreshLatest(); refreshReports(); }, 15000);
 }
 boot().catch((e) => alert("加载失败：" + e.message));
