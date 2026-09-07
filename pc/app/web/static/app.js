@@ -208,22 +208,62 @@ async function genReport(kind) {
   refreshReports();
 }
 
-async function wifiConnect() {
-  const host = $("#wifi-host").value.trim();
-  const port = parseInt($("#wifi-port").value, 10);
-  const pairPort = parseInt($("#wifi-pair-port").value, 10) || null;
-  const pairCode = $("#wifi-pair-code").value.trim() || null;
+function renderWifiDevices(items, box) {
+  box.innerHTML = "";
+  if (!items || !items.length) { box.textContent = "未发现无线设备（确认手机已开启「无线调试」且与电脑同网）"; box.className = "muted"; return; }
+  box.className = "";
+  for (const d of items) {
+    const row = document.createElement("div");
+    const label = document.createElement("span");
+    label.textContent = `${d.name ? d.name + " · " : ""}${d.host}:${d.port}${d.tls ? " (TLS)" : ""}`;
+    const b = document.createElement("button");
+    b.className = "mini"; b.textContent = "连接";
+    b.onclick = () => wifiConnect(d.host, d.port, null, null);
+    row.append(label, " ", b);
+    box.append(row);
+  }
+}
+
+async function wifiScan() {
+  try {
+    const res = await j("/api/wifi/scan");
+    renderWifiDevices(res.devices || [], $("#wifi-scan-list"));
+  } catch (e) { $("#wifi-scan-list").textContent = "扫描失败：" + e.message; }
+}
+
+async function wifiStatus() {
+  try {
+    const res = await j("/api/wifi/status");
+    const s = $("#wifi-status");
+    if (!res.ok) { s.textContent = "获取失败：" + res.reason; return; }
+    s.innerHTML = "";
+    s.append(document.createTextNode(`无线[${(res.wireless || []).join(", ") || "无"}]  USB[${(res.usb || []).join(", ") || "无"}]`));
+    for (const w of (res.wireless || [])) {
+      const b = document.createElement("button");
+      b.className = "mini"; b.textContent = "断开 " + w;
+      b.onclick = async () => {
+        try { await j("/api/wifi/disconnect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ addr: w }) }); }
+        catch (e) { alert(e.message); }
+        wifiStatus();
+      };
+      s.append(" ", b);
+    }
+  } catch (e) { $("#wifi-status").textContent = "状态失败：" + e.message; }
+}
+
+async function wifiConnect(host, port, pairPort, pairCode) {
   const box = $("#wifi-result");
-  if (!host || !port) { box.textContent = "请先填手机 IP 与连接端口"; return; }
+  if (!host || !port) { box.textContent = "请填手机 IP 与连接端口"; return; }
   try {
     const res = await j("/api/wifi/connect", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ host, port, pair_port: pairPort, pair_code: pairCode }),
+      body: JSON.stringify({ host, port, pair_port: pairPort || null, pair_code: pairCode || null }),
     });
     box.textContent = res.ok
       ? "已连接：" + ((res.devices || []).join(", ") || "(未显示设备?)") + (res.output ? "｜" + res.output : "")
       : "失败：" + (res.reason || res.output || "");
+    wifiStatus(); wifiScan();
   } catch (e) { box.textContent = "连接失败：" + e.message; }
 }
 
@@ -253,7 +293,14 @@ function initEvents() {
   $("#btn-gen-hourly").onclick = () => genReport("hourly");
   $("#btn-refresh-reports").onclick = () => refreshReports();
   $("#report-kind").onchange = () => refreshReports();
-  $("#btn-wifi-connect").onclick = () => wifiConnect();
+  $("#btn-wifi-scan").onclick = () => wifiScan();
+  $("#btn-wifi-status").onclick = () => wifiStatus();
+  $("#btn-wifi-connect").onclick = () => wifiConnect(
+    $("#wifi-host").value.trim(),
+    parseInt($("#wifi-port").value, 10) || 0,
+    parseInt($("#wifi-pair-port").value, 10) || null,
+    $("#wifi-pair-code").value.trim() || null
+  );
 }
 
 async function boot() {

@@ -322,3 +322,32 @@ def api_wifi_connect(payload: dict) -> dict:
         return result
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "reason": str(e)}
+
+
+@app.get("/api/wifi/scan")
+def api_wifi_scan() -> dict:
+    """自动发现局域网内开启无线调试的设备（adb mdns，可免手填 IP/端口）。"""
+    from . import wifi as wifi_mod
+    try:
+        return {"ok": True, "devices": wifi_mod.mdns_scan()}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "reason": str(e), "devices": []}
+
+
+@app.get("/api/wifi/status")
+def api_wifi_status() -> dict:
+    from . import wifi as wifi_mod
+    try:
+        return {"ok": True, **wifi_mod.devices_status()}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "reason": str(e)}
+
+
+@app.post("/api/wifi/disconnect")
+def api_wifi_disconnect(payload: dict) -> dict:
+    from . import wifi as wifi_mod
+    addr = str(payload.get("addr", "")).strip()
+    try:
+        return wifi_mod.disconnect(addr) if addr else {"ok": False, "reason": "请提供要断开的设备地址"}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "reason": str(e)}

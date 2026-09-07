@@ -80,19 +80,23 @@
   <section>
     <h2>局域网无线调试（同一 Wi-Fi，免数据线）</h2>
     <div class="row">
-      <input id="wifi-host" placeholder="手机 IP，如 192.168.1.50" />
-      <input id="wifi-port" placeholder="连接端口" type="number" style="width:120px" />
-      <button id="btn-wifi-connect" class="mini">无线连接</button>
+      <button id="btn-wifi-scan" class="mini">🔍 扫描无线设备</button>
+      <button id="btn-wifi-status" class="mini">刷新状态</button>
     </div>
-    <div class="row">
-      <input id="wifi-pair-port" placeholder="配对端口（首次配对用）" type="number" style="width:150px" />
-      <input id="wifi-pair-code" placeholder="配对码（6位）" style="width:120px" />
-    </div>
+    <div id="wifi-scan-list" class="muted">点「扫描无线设备」自动发现同一局域网内已开启「无线调试」的手机；无结果可用下方手动输入。</div>
+    <div class="row"><b>当前设备：</b><span id="wifi-status" class="muted">-</span></div>
+    <details>
+      <summary>手动输入（扫描不到时用）</summary>
+      <div class="row">
+        <input id="wifi-host" placeholder="手机 IP，如 192.168.1.50" />
+        <input id="wifi-port" placeholder="连接端口" type="number" style="width:120px" />
+        <input id="wifi-pair-port" placeholder="配对端口(首次)" type="number" style="width:130px" />
+        <input id="wifi-pair-code" placeholder="配对码(6位)" style="width:100px" />
+      </div>
+      <button id="btn-wifi-connect" class="mini">连接</button>
+    </details>
     <div id="wifi-result" class="muted"></div>
-    <div class="muted">
-      手机开启「开发者选项 → 无线调试」→ 记下 IP / 连接端口；首次配对点「使用配对码配对设备」，
-      填配对端口 + 6 位码 → 点「无线连接」→ 之后采集走 Wi-Fi（用数据线连接后到桌面端刷新设备同效）。
-    </div>
+    <div class="muted">手机「设置 → 开发者选项 → 无线调试」开启后点扫描；首次连接填一次配对端口+6位码即可。</div>
   </section>
 
 </main>

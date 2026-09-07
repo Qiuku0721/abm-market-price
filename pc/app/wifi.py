@@ -1,12 +1,14 @@
-"""局域网无线调试连接（adb over Wi-Fi）：手机与电脑同一网络，无需数据线。
+"""局域网无线调试连接（adb over Wi-Fi）：自动发现 + 连接 + 断开 + 状态。
 
-适用：Android 11+ 的「开发者选项 → 无线调试」（设置→无线调试→开启；用配对码配对时填
-「使用配对码配对设备」的端口与 6 位码）；旧安卓可用 `adb tcpip 5555` 后连接。
+- 自动发现：`adb mdns services` 列出局域网内开启了「无线调试」的手机；
+- 连接：`adb connect ip:port`；首次可 `adb pair`（配对端口+6位码）；
+- 状态：区分「无线设备（ip:port）」与「USB 设备」。
 """
 
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -24,17 +26,45 @@ def find_adb() -> str:
     raise RuntimeError("未找到 adb：请安装 platform-tools 或设置 ANDROID_HOME")
 
 
-def _run(adb: str, args: list[str], input_text: str | None = None, timeout: int = 25) -> subprocess.CompletedProcess:
+def _run(adb: str, args: list[str], input_text: str | None = None, timeout: int = 20) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [adb, *args],
-        capture_output=True,
-        text=True,
-        input=input_text,
-        timeout=timeout,
+        [adb, *args], capture_output=True, text=True, input=input_text, timeout=timeout
     )
 
 
+def _parse_mdns(text: str) -> list[dict]:
+    """解析 `adb mdns services` 输出为候选设备列表（按多空格分列，名可含单空格）。"""
+    out: list[dict] = []
+    for line in (text or "").splitlines():
+        s = line.strip()
+        if not s or s.startswith(("Name", "List of", "mdns daemon")):
+            continue
+        cols = re.split(r"\s{2,}", s)
+        if len(cols) >= 4:
+            try:
+                port = int(cols[3])
+            except ValueError:
+                continue
+            out.append({
+                "name": cols[0],
+                "host": cols[2],
+                "port": port,
+                "tls": (cols[4] == "tls") if len(cols) > 4 else False,
+            })
+    return out
+
+
+def mdns_scan(adb: str | None = None) -> list[dict]:
+    adb = adb or find_adb()
+    try:
+        p = _run(adb, ["mdns", "services"], timeout=10)
+    except subprocess.TimeoutExpired:
+        return []
+    return _parse_mdns(p.stdout or "")
+
+
 def devices(adb: str | None = None) -> list[str]:
+    """在线设备地址列表（含无线与 USB）。"""
     adb = adb or find_adb()
     p = _run(adb, ["devices"])
     out = []
@@ -45,6 +75,14 @@ def devices(adb: str | None = None) -> list[str]:
     return out
 
 
+def devices_status(adb: str | None = None) -> dict:
+    adb = adb or find_adb()
+    ids = devices(adb)
+    wireless = [a for a in ids if ":" in a]
+    usb = [a for a in ids if ":" not in a]
+    return {"wireless": wireless, "usb": usb, "all": ids}
+
+
 def wifi_connect(
     host: str,
     dev_port: int,
@@ -52,7 +90,6 @@ def wifi_connect(
     pair_code: str | None = None,
     adb: str | None = None,
 ) -> dict:
-    """连接手机无线调试。首次配对填 pair_port+pair_code；之后仅 connect。返回设备列表。"""
     adb = adb or find_adb()
     log: list[str] = []
     if pair_port and pair_code:
@@ -65,3 +102,9 @@ def wifi_connect(
         "output": "\n".join(x for x in log if x),
         "devices": devices(adb),
     }
+
+
+def disconnect(addr: str, adb: str | None = None) -> dict:
+    adb = adb or find_adb()
+    p = _run(adb, ["disconnect", addr])
+    return {"ok": p.returncode == 0, "output": (p.stdout or p.stderr or "").strip()}
