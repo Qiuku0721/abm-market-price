@@ -208,6 +208,25 @@ async function genReport(kind) {
   refreshReports();
 }
 
+async function wifiConnect() {
+  const host = $("#wifi-host").value.trim();
+  const port = parseInt($("#wifi-port").value, 10);
+  const pairPort = parseInt($("#wifi-pair-port").value, 10) || null;
+  const pairCode = $("#wifi-pair-code").value.trim() || null;
+  const box = $("#wifi-result");
+  if (!host || !port) { box.textContent = "请先填手机 IP 与连接端口"; return; }
+  try {
+    const res = await j("/api/wifi/connect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ host, port, pair_port: pairPort, pair_code: pairCode }),
+    });
+    box.textContent = res.ok
+      ? "已连接：" + ((res.devices || []).join(", ") || "(未显示设备?)") + (res.output ? "｜" + res.output : "")
+      : "失败：" + (res.reason || res.output || "");
+  } catch (e) { box.textContent = "连接失败：" + e.message; }
+}
+
 function initEvents() {
   $("#btn-refresh").onclick = () => Promise.all([refreshOverview(), refreshLatest(), refreshBullets()]).catch(alert);
   $("#trend-bullet").onchange = (e) => selectBullet(e.target.value);
@@ -234,6 +253,7 @@ function initEvents() {
   $("#btn-gen-hourly").onclick = () => genReport("hourly");
   $("#btn-refresh-reports").onclick = () => refreshReports();
   $("#report-kind").onchange = () => refreshReports();
+  $("#btn-wifi-connect").onclick = () => wifiConnect();
 }
 
 async function boot() {

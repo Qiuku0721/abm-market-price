@@ -303,3 +303,22 @@ def api_report_generate(kind: str = "daily") -> dict:
     if rep is None:
         return {"ok": False, "reason": "该时段暂无价格数据"}
     return {"ok": True, "report": rep}
+
+
+# ---------- 局域网无线调试 ----------
+
+@app.post("/api/wifi/connect")
+def api_wifi_connect(payload: dict) -> dict:
+    try:
+        from . import wifi as wifi_mod
+        host = str(payload.get("host", "")).strip()
+        dev_port = int(payload.get("port", 0))
+        pair_port = int(payload["pair_port"]) if payload.get("pair_port") else None
+        pair_code = str(payload.get("pair_code", "")).strip() or None
+        if not host or not dev_port:
+            return {"ok": False, "reason": "请填写手机 IP 与连接端口"}
+        result = wifi_mod.wifi_connect(host, dev_port, pair_port, pair_code)
+        result["ok"] = bool(result.get("devices"))
+        return result
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "reason": str(e)}
