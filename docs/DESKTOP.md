@@ -50,7 +50,7 @@
 
 | 现象 | 处理 |
 |---|---|
-| "未找到 adb" | 装 platform-tools 或设置 ANDROID_HOME；本机常见位置 `D:\IDEA\adb\platform-tools` |
+| "未找到 adb" | 装 platform-tools 或设置 ANDROID_HOME；常用位置 `%ANDROID_HOME%\platform-tools` |
 | 设备列表为空 | 手机插线 + 允许 USB 调试授权，点「刷新设备」 |
 | 画面点不了/没反应 | 先「抓一帧」成功、画面显示后再点选 |
 | 「试点」点了没效果 | 确认当前画面正是游戏（需游戏在前台） |
