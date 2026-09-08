@@ -65,8 +65,8 @@ public class MainForm : Form
     // ---------------- UI 搭建 ----------------
     private void BuildUi()
     {
-        // 顶部：设备栏 + 无线调试连接
-        var top = new Panel { Dock = DockStyle.Top, Height = 70, Padding = new Padding(8, 6, 8, 0) };
+        // 顶部：设备栏
+        var top = new Panel { Dock = DockStyle.Top, Height = 38, Padding = new Padding(8, 6, 8, 0) };
         top.Controls.Add(new Label { Text = "设备:", AutoSize = true, Location = new Point(10, 9) });
         _cbDevices.Location = new Point(60, 6); _cbDevices.Width = 220; top.Controls.Add(_cbDevices);
         var btnRefresh = new Button { Text = "刷新设备", Location = new Point(290, 5), Width = 90 };
@@ -75,83 +75,6 @@ public class MainForm : Form
         _lblAdb.Location = new Point(395, 10); _lblAdb.MaximumSize = new Size(620, 20);
         top.Controls.Add(_lblAdb);
 
-        // 无线调试连接（先声明控件，避免闭包捕获未声明变量）
-        var cbWifi = new ComboBox { Location = new Point(110, 38), Width = 240, DropDownStyle = ComboBoxStyle.DropDownList };
-        top.Controls.Add(cbWifi);
-        var tbPair = new TextBox { Location = new Point(360, 38), Width = 90, PlaceholderText = "配对端口(可选)" };
-        top.Controls.Add(tbPair);
-        var tbCode = new TextBox { Location = new Point(455, 38), Width = 100, PlaceholderText = "配对码(可选)" };
-        top.Controls.Add(tbCode);
-        var lblWifi = new Label { Location = new Point(730, 42), AutoSize = true, MaximumSize = new Size(360, 20), ForeColor = Color.Gray };
-        top.Controls.Add(lblWifi);
-
-        // 内部刷新无线状态（lblWifi 已声明）
-        void RefreshWifiStatus()
-        {
-            if (_adb is null) return;
-            try
-            {
-                var st = _adb.DeviceStatus();
-                var w = st["wireless"].Count > 0 ? string.Join(", ", st["wireless"]) : "无";
-                var u = st["usb"].Count > 0 ? string.Join(", ", st["usb"]) : "无";
-                lblWifi.Text = $"无线[{w}] USB[{u}]";
-            }
-            catch (Exception ex) { lblWifi.Text = "状态: " + ex.Message; }
-        }
-
-        var btnScanWifi = new Button { Text = "扫描无线", Location = new Point(10, 38), Width = 90 };
-        btnScanWifi.Click += (_, _) =>
-        {
-            if (_adb is null) TryInitAdb();
-            if (_adb is null) return;
-            try
-            {
-                var list = _adb.MdnsServices();
-                cbWifi.Items.Clear();
-                foreach (var it in list) cbWifi.Items.Add(it);
-                if (list.Count == 0) Log("未发现无线调试设备：请手机开启「无线调试」且与电脑同网");
-                else { if (cbWifi.Items.Count > 0) cbWifi.SelectedIndex = 0; RefreshWifiStatus(); }
-            }
-            catch (Exception ex) { Log("扫描无线失败：" + ex.Message); }
-        };
-        top.Controls.Add(btnScanWifi);
-
-        var btnWifiConn = new Button { Text = "无线连接", Location = new Point(560, 38), Width = 90 };
-        btnWifiConn.Click += (_, _) =>
-        {
-            if (_adb is null) { Log("请先扫描并选择设备"); return; }
-            if (cbWifi.SelectedItem is not string sel || !sel.Contains(":")) { Log("先扫描并选择一台无线设备"); return; }
-            var hp = sel.Split('|')[^1].Trim(); // "ip:port"
-            var iv = hp.LastIndexOf(':');
-            if (!int.TryParse(hp[(iv + 1)..], out var port) || iv <= 0) { Log("无法解析设备地址"); return; }
-            var host = hp[..iv];
-            int? pairPort = int.TryParse(tbPair.Text.Trim(), out var pp) ? pp : null;
-            try
-            {
-                _adb.WifiConnect(host, port, pairPort, tbCode.Text.Trim());
-                Log("已尝试无线连接： " + hp);
-                RefreshWifiStatus(); RefreshDevices();
-            }
-            catch (Exception ex) { Log("无线连接失败：" + ex.Message); }
-        };
-        top.Controls.Add(btnWifiConn);
-
-        var btnWifiDis = new Button { Text = "断开", Location = new Point(655, 38), Width = 70 };
-        btnWifiDis.Click += (_, _) =>
-        {
-            if (_adb is null) return;
-            try
-            {
-                var st = _adb.DeviceStatus();
-                var w = st["wireless"].FirstOrDefault();
-                if (w == null) { Log("当前没有无线设备可断开"); return; }
-                _adb.WifiDisconnect(w);
-                Log("已断开： " + w);
-                RefreshWifiStatus(); RefreshDevices();
-            }
-            catch (Exception ex) { Log("断开失败：" + ex.Message); }
-        };
-        top.Controls.Add(btnWifiDis);
         Controls.Add(top);
 
         // 底部：日志
